@@ -3,21 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 第 9 项：Turnstile 站点密钥（不再硬编码）
-         该值由服务端注入：functions/_middleware.js 读取环境变量 TURNSTILE_SITE_KEY，
-         启用时把下面 content 里的值替换成真实站点密钥；未配置 / 未开启时保持为空 = 不渲染验证码。
-         服务端密钥 TURNSTILE_SECRET 只存在于服务端，任何情况下都不会下发到前端。 -->
     <meta name="turnstile-site-key" content="">
     <title>Personal Chat</title>
-    <!-- 微信气泡图标，随主题明暗切换 -->
     <link rel="icon" href="/favicon.svg" id="app-favicon">
-    <!-- 首屏即应用主题：默认明亮，优先使用本地存储的明暗主题（避免闪烁） -->
     <script>
         (function () {
             var t = 'light';
             try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
             document.documentElement.setAttribute('data-theme', t);
-            // 0.10.0：配色 / 字号 / 密度同样在首屏应用，避免刷新时闪一下默认样式
             try {
                 var a = localStorage.getItem('enh_accent') || 'graphite';
                 var f = localStorage.getItem('enh_fontsize') || 'normal';
@@ -32,7 +25,6 @@
                 if (l) l.setAttribute('href', d === 'dark' ? '/favicon-dark.svg' : '/favicon.svg');
             };
             window.updateFavicon();
-            // 兜底：即使脚本异常，5 秒后也隐藏加载页
             setTimeout(function () {
                 var s = document.getElementById('splash-screen');
                 if (s) s.classList.add('hide');
@@ -47,7 +39,7 @@
 </head>
 <body>
 
-    <!-- ===== 加载页（打开/跳转时显示） ===== -->
+    <!-- ===== 加载页 ===== -->
     <div id="splash-screen" class="splash-screen">
         <div class="splash-logo"><i class="fas fa-comments"></i></div>
         <div class="splash-title">Personal Chat</div>
@@ -66,8 +58,6 @@
 
     <!-- ===== 聊天界面 ===== -->
     <div id="chat-container" class="chat-container">
-
-        <!-- 侧边栏（联系人列表） -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <span><i class="fas fa-comments"></i> 联系人</span>
@@ -76,15 +66,11 @@
                 </button>
             </div>
             <div class="contacts-list" id="contacts-list">
-                <!-- 动态加载 -->
             </div>
         </aside>
-
-        <!-- 展开按钮（侧边栏收起时显示） -->
         <button class="expand-btn" id="expandBtn" title="展开侧边栏" style="display:none;">
             <i class="fas fa-chevron-right"></i>
         </button>
-
         <!-- 主聊天区域 -->
         <main class="main">
             <header class="header">
@@ -96,7 +82,6 @@
                     </div>
                 </div>
                 <div class="user-actions">
-                    <!-- 0.10.0：命令面板（Ctrl+Shift+P） -->
                     <button id="enhPaletteBtn" class="header-btn" title="命令面板（Ctrl+Shift+P）">
                         <i class="fas fa-wand-magic-sparkles"></i>
                     </button>
@@ -108,13 +93,11 @@
                     <button id="profile-btn" title="个人资料"><i class="fas fa-user"></i></button>
                     <button id="settings-btn" title="设置"><i class="fas fa-cog"></i></button>
                     <button id="logout-btn" title="退出登录"><i class="fas fa-sign-out-alt"></i></button>
-                    <!-- 0.14.4：移动端收纳（低频账号操作收进「⋮」面板） -->
                     <button id="userMoreBtn" class="user-more-btn" title="更多账号操作" aria-haspopup="dialog" aria-expanded="false" aria-controls="userMorePanel">
                         <i class="fas fa-ellipsis-vertical"></i>
                     </button>
                 </div>
             </header>
-
             <!-- 当前联系人标题 -->
             <div class="chat-header">
                 <button class="mobile-menu-btn" id="mobileMenuBtn" title="联系人列表">
@@ -126,7 +109,6 @@
                     <button id="searchBtn" class="chat-header-btn" title="搜索聊天记录">
                         <i class="fas fa-magnifying-glass"></i>
                     </button>
-                    <!-- 0.13.0：时光机（回放某一天的对话） -->
                     <button id="replayBtn" class="chat-header-btn" title="时光机：回放某一天的对话">
                         <i class="fas fa-clock-rotate-left"></i>
                     </button>
@@ -145,7 +127,6 @@
                     <button id="clearHistoryBtn" class="chat-header-btn" title="删除聊天记录" style="display:none;">
                         <i class="fas fa-trash-can"></i>
                     </button>
-                    <!-- 0.14.4：移动端「更多」，收纳上面这些低频操作（桌面端不显示） -->
                     <button id="chatMoreBtn" class="chat-header-btn chat-more-btn" title="更多操作" aria-haspopup="dialog" aria-expanded="false" aria-controls="chatMorePanel">
                         <i class="fas fa-ellipsis-vertical"></i>
                     </button>
@@ -154,9 +135,7 @@
 
             <!-- 移动端侧边栏遮罩 -->
             <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
             <div id="chatBox" class="message-area">
-                <!-- 消息动态渲染 -->
             </div>
 
             <!-- 快捷回到最新消息 -->
@@ -351,7 +330,7 @@
         </div>
     </div>
 
-    <!-- AI 设置（点击聊天中的 AI 头像打开；模型为全局，AI 参数仅对当前 AI 生效） -->
+    <!-- AI 设置 -->
     <div id="ai-settings-modal" class="modal">
         <div class="modal-content ai-settings-modal-content">
             <div class="modal-header">
@@ -364,7 +343,6 @@
                     <div class="settings-title"><i class="fas fa-microchip"></i> 模型（全局）</div>
                     <div class="settings-options model-options">
                         <button class="settings-option-btn" data-model="deepseek-flash">快速</button>
-                        <!-- <button class="settings-option-btn" data-model="deepseek-reasoner">思考</button> -->
                     </div>
                     <div class="form-group" style="margin-top:10px;">
                         <label for="ai-settings-model">自定义模型</label>
@@ -458,7 +436,7 @@
         </div>
     </div>
 
-    <!-- 搜索聊天记录（第 20 项） -->
+    <!-- 搜索聊天记录 -->
     <div id="search-modal" class="modal">
         <div class="modal-content search-modal-content">
             <div class="modal-header">
@@ -476,7 +454,7 @@
         </div>
     </div>
 
-    <!-- 我的收藏（第 23 项） -->
+    <!-- 我的收藏 -->
     <div id="favorites-modal" class="modal">
         <div class="modal-content favorites-modal-content">
             <div class="modal-header">
@@ -491,7 +469,7 @@
         </div>
     </div>
 
-    <!-- 编辑历史（第 25 项） -->
+    <!-- 编辑历史 -->
     <div id="edits-modal" class="modal">
         <div class="modal-content edits-modal-content">
             <div class="modal-header">
@@ -506,10 +484,10 @@
         </div>
     </div>
 
-    <!-- 表情回应选择器（第 24 项，动态定位） -->
+    <!-- 表情回应选择器 -->
     <div id="reaction-picker" class="reaction-picker" style="display:none"></div>
 
-    <!-- AI 答应你的事（承诺/待办，第 18 项） -->
+    <!-- AI 答应你的事 -->
     <div id="commitments-modal" class="modal">
         <div class="modal-content commitments-modal-content">
             <div class="modal-header">
@@ -529,7 +507,7 @@
         </div>
     </div>
 
-    <!-- 删除聊天记录（勾选即删除该条及更晚的所有消息） -->
+    <!-- 删除聊天记录 -->
     <div id="clear-history-modal" class="modal">
         <div class="modal-content clear-history-modal-content">
             <div class="modal-header">
@@ -559,7 +537,7 @@
         </div>
     </div>
 
-    <!-- ===== 移动端「更多」面板：聊天操作收纳（0.14.4） ===== -->
+    <!-- ===== 移动端「更多」面板 ===== -->
     <div id="chatMorePanel" class="more-panel" role="dialog" aria-modal="true"
          aria-labelledby="chatMorePanelTitle" aria-hidden="true">
         <div class="more-panel-card">
@@ -590,7 +568,7 @@
         </div>
     </div>
 
-    <!-- ===== 移动端「更多」面板：账号操作收纳（0.14.4） ===== -->
+    <!-- ===== 移动端「更多」面板 ===== -->
     <div id="userMorePanel" class="more-panel" role="dialog" aria-modal="true"
          aria-labelledby="userMorePanelTitle" aria-hidden="true">
         <div class="more-panel-card">
@@ -621,9 +599,6 @@
     <!-- 自定义右键 / 长按菜单 -->
     <div id="context-menu" class="context-menu" style="display:none"></div>
 
-    <!-- marked.js - Markdown 解析库（defer：不阻塞首屏解析，登录后渲染消息时早已就绪） -->
-    <!-- script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script-->
     <script src="js/marked.min.js"></script>
     <script src="js/purify.min.js"></script>
     <script src="js/modal.js"></script>
@@ -632,14 +607,10 @@
     <script src="js/turnstile.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/theme.js"></script>
-    <!-- 版本号唯一来源（0.11.0 起独立成文件；必须早于 features.js） -->
     <script src="js/version.js"></script>
-    <!-- features.js 必须先于 app.js 加载：app.js 的 initApp 会调用其中的 init* 函数 -->
     <script src="js/features.js"></script>
     <script src="js/app.js"></script>
-    <!-- 0.10.0 增强包：必须在 app.js 之后（需要包装 app.js 的渲染函数） -->
     <script src="js/enhance.js"></script>
-    <!-- 0.13.0 好玩扩展：时光机回放 + 分享卡片（只在聊天页加载） -->
     <script src="js/enhance-cinema.js"></script>
 </body>
 </html>
