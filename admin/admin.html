@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理 · Personal Chat</title>
+    <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            window.updateFavicon = function () {
+                var d = document.documentElement.getAttribute('data-theme');
+                var l = document.getElementById('app-favicon');
+                if (l) l.setAttribute('href', d === 'dark' ? '/favicon-dark.svg' : '/favicon.svg');
+            };
+            window.updateFavicon();
+            setTimeout(function () {
+                var s = document.getElementById('splash-screen');
+                if (s) s.classList.add('hide');
+            }, 5000);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="AGM.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+    <!-- ===== 加载页 ===== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-logo"><i class="fas fa-user-shield"></i></div>
+        <div class="splash-title">系统管理</div>
+        <div class="loader"></div>
+    </div>
+
+    <!-- ===== 顶部导航 ===== -->
+    <header class="admin-header">
+        <div class="header-left">
+            <a href="/index.html" class="btn-icon" title="返回聊天"><i class="fas fa-arrow-left"></i></a>
+            <h1><i class="fas fa-user-shield"></i> 系统管理</h1>
+        </div>
+        <div class="header-right">
+            <span id="adminUser" class="user-badge"></span>
+            <a href="roles.html" class="btn-icon" title="角色管理"><i class="fas fa-robot"></i></a>
+            <a href="stats.html" class="btn-icon" title="数据统计"><i class="fas fa-chart-line"></i></a>
+            <button id="themeToggleBtn" class="btn-icon" title="切换明暗主题"><i class="fas fa-moon"></i></button>
+            <button id="refreshAllBtn" class="btn-icon" title="刷新全部"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </header>
+
+    <main class="admin-main">
+
+        <!-- ===== 系统初始化 ===== -->
+        <section class="panel" id="systemPanel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fas fa-wand-magic-sparkles"></i> 系统初始化</div>
+                <button id="genMasterKeyBtn" class="btn-accent">
+                    <i class="fas fa-key"></i> 生成随机主密钥
+                </button>
+            </div>
+            <p class="panel-desc">
+                主密钥（<code>SECRET_MASTER_KEY</code>）用于加密用户保存在数据库里的 API Key。
+                生成后请立即复制并配置到 Cloudflare，本页不会保存它。
+            </p>
+            <p class="panel-desc">
+                人机验证（Turnstile）需要在 Cloudflare 配置两把密钥：站点密钥
+                <code>TURNSTILE_SITE_KEY</code>（公开，服务端会注入登录页）与服务端密钥
+                <code>TURNSTILE_SECRET</code>（保密，用 <code>wrangler pages secret put</code> 写入）。
+                两者都配置后，再到下面「功能开关（运行级配置）」里打开「登录 / 注册人机验证」。
+            </p>
+            <div class="status-grid" id="systemStatus">
+                <div class="status-item"><span>正在读取系统状态…</span></div>
+            </div>
+        </section>
+
+        <!-- ===== 功能开关（运行级配置） ===== -->
+        <section class="panel" id="settingsPanel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fas fa-toggle-on"></i> 功能开关（运行级配置）</div>
+                <button id="saveSettingsBtn" class="btn-accent"><i class="fas fa-save"></i> 保存</button>
+            </div>
+            <p class="panel-desc">修改后立即生效。关闭某个功能后，对应接口会直接返回 403。</p>
+            <div id="settingsGrid" class="settings-grid">
+                <div class="empty">加载中…</div>
+            </div>
+        </section>
+
+        <!-- ===== 邀请码管理 ===== -->
+        <section class="panel" id="invitesPanel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fas fa-ticket"></i> 邀请码管理</div>
+                <div class="toolbar">
+                    <label class="inline-field">有效天数
+                        <input id="inviteExpireDays" type="number" min="1" max="3650" value="7">
+                    </label>
+                    <button id="generateInvitesBtn" class="btn-accent">
+                        <i class="fas fa-plus"></i> 生成邀请码
+                    </button>
+                </div>
+            </div>
+            <p class="panel-desc">开启「注册需邀请码」后，新用户必须填写这里的邀请码。未使用的邀请码会高亮显示，生成后可直接复制发给对方。</p>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>邀请码</th>
+                            <th>状态</th>
+                            <th>到期时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invitesBody">
+                        <tr><td colspan="5" class="empty">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pager">
+                <button id="invitesPrev" class="btn-secondary btn-xs" disabled>上一页</button>
+                <span id="invitesPageInfo">—</span>
+                <button id="invitesNext" class="btn-secondary btn-xs" disabled>下一页</button>
+            </div>
+        </section>
+
+        <div class="panel-grid">
+            <!-- ===== 用户管理 ===== -->
+            <section class="panel" id="usersPanel">
+                <div class="panel-head">
+                    <div class="panel-title"><i class="fas fa-users"></i> 用户管理</div>
+                    <div class="toolbar">
+                        <input id="userSearch" type="text" placeholder="搜索用户名…" autocomplete="off">
+                        <button id="userSearchBtn" class="btn-secondary">搜索</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>今日 tokens</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersBody">
+                            <tr><td colspan="6" class="empty">加载中…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pager">
+                    <button id="usersPrev" class="btn-secondary btn-xs" disabled>上一页</button>
+                    <span id="usersPageInfo">—</span>
+                    <button id="usersNext" class="btn-secondary btn-xs" disabled>下一页</button>
+                </div>
+            </section>
+
+            <!-- ===== 用户用量 ===== -->
+            <section class="panel" id="usagePanel">
+                <div class="panel-head">
+                    <div class="panel-title"><i class="fas fa-chart-column"></i> 用户用量</div>
+                    <div class="toolbar" id="usageDays">
+                        <button class="chip active" data-days="7">7 天</button>
+                        <button class="chip" data-days="30">30 天</button>
+                        <button class="chip" data-days="90">90 天</button>
+                    </div>
+                </div>
+                <div class="stat-row" id="usageStats"></div>
+                <div id="usageChart" style="height: 200px;"></div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>用户</th><th>区间 tokens</th><th>最近用量</th></tr>
+                        </thead>
+                        <tbody id="usageBody">
+                            <tr><td colspan="3" class="empty">加载中…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== 操作日志 ===== -->
+        <section class="panel" id="adminLogsPanel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fas fa-clipboard-list"></i> 操作日志</div>
+                <span class="panel-hint">最近 100 条 · 只读</span>
+            </div>
+            <div class="table-wrap table-wrap-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>时间</th><th>管理员</th><th>动作</th><th>对象</th><th>IP</th></tr>
+                    </thead>
+                    <tbody id="adminLogsBody">
+                        <tr><td colspan="5" class="empty">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== 登录日志 ===== -->
+        <section class="panel" id="loginLogsPanel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fas fa-right-to-bracket"></i> 登录日志</div>
+                <div class="toolbar">
+                    <label class="inline-field">保留天数
+                        <input id="retentionDays" type="number" min="1" max="3650" value="30">
+                    </label>
+                    <button id="saveRetentionBtn" class="btn-accent">保存</button>
+                    <span class="muted">|</span>
+                    <div class="toolbar" id="loginDays">
+                        <button class="chip active" data-days="7">7 天</button>
+                        <button class="chip" data-days="30">30 天</button>
+                        <button class="chip" data-days="90">90 天</button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-wrap table-wrap-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>时间</th><th>用户</th><th>结果</th><th>原因</th><th>IP</th></tr>
+                    </thead>
+                    <tbody id="loginLogsBody">
+                        <tr><td colspan="5" class="empty">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== 主密钥弹窗（10 分钟倒计时） ===== -->
+    <div id="masterKeyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> 新的主密钥</h2>
+                <button id="closeMasterKey" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="panel-desc">
+                    请立即复制并配置到 Cloudflare：
+                    <b>Pages 项目 → Settings → Environment variables → 添加 Secret <code>SECRET_MASTER_KEY</code></b>，
+                    或在项目目录执行：
+                </p>
+                <code class="cmd">wrangler pages secret put SECRET_MASTER_KEY</code>
+                <div class="master-key-box"><code id="generatedMasterKey"></code></div>
+                <div class="key-meta">
+                    <span id="keyCountdown">10:00</span>
+                    <button id="copyMasterKey" class="btn-accent"><i class="fas fa-copy"></i> 复制</button>
+                </div>
+                <p class="panel-desc danger">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    倒计时结束后本页不再显示密钥；密钥只存在当前页面内存里，刷新即丢失。
+                    更换主密钥后，已保存的用户 API Key 将无法解密，需要用户重新保存。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/version.js"></script>
+    <script src="/js/modal.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6/dist/echarts.min.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

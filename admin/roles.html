@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 · 联系人设置</title>
+    <!-- 微信气泡图标，随主题明暗切换 -->
+    <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <!-- 首屏即应用主题：默认明亮，优先本地存储 -->
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            window.updateFavicon = function () {
+                var d = document.documentElement.getAttribute('data-theme');
+                var l = document.getElementById('app-favicon');
+                if (l) l.setAttribute('href', d === 'dark' ? '/favicon-dark.svg' : '/favicon.svg');
+            };
+            window.updateFavicon();
+            setTimeout(function () {
+                var s = document.getElementById('splash-screen');
+                if (s) s.classList.add('hide');
+            }, 5000);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="AGM.css">
+    <link rel="stylesheet" href="roles.css">
+</head>
+<body>
+
+    <!-- ===== 加载页 ===== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-logo"><i class="fas fa-robot"></i></div>
+        <div class="splash-title">管理后台</div>
+        <div class="loader"></div>
+    </div>
+
+    <!-- ===== 顶部导航 ===== -->
+    <header class="admin-header">
+        <div class="header-left">
+            <button id="backBtn" class="btn-icon" title="返回聊天">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1><i class="fas fa-robot"></i> 角色管理</h1>
+        </div>
+        <div class="header-right">
+            <span id="adminUser" class="user-badge"></span>
+            <a href="stats.html" class="btn-icon" title="数据统计"><i class="fas fa-chart-line"></i></a>
+            <button id="refreshBtn" class="btn-icon" title="刷新">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ===== 统计栏 ===== -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-number" id="totalCount">0</span>
+            <span class="stat-label">总角色</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="aiCount">0</span>
+            <span class="stat-label">AI 角色</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="userCount">0</span>
+            <span class="stat-label">普通用户</span>
+        </div>
+    </div>
+
+    <!-- ===== 工具栏：搜索框 + 新建按钮 排在一排 ===== -->
+    <div class="toolbar-row">
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="搜索联系人名称...">
+        </div>
+        <button id="clearSearchBtn" class="btn-icon" title="清除搜索">
+            <i class="fas fa-times"></i>
+        </button>
+        <button id="createContactBtn" class="btn-accent" title="新建联系人">
+            <i class="fas fa-plus"></i> 新建
+        </button>
+        <button id="archiveToggleBtn" class="btn-secondary" title="查看归档区" style="padding:6px 12px;font-size:0.78rem;">
+            <i class="fas fa-box-archive"></i> 归档区
+        </button>
+    </div>
+
+    <!-- ===== 联系人列表 ===== -->
+    <div class="table-container">
+        <table id="contactsTable">
+            <thead>
+                <tr>
+                    <th>类型</th>
+                    <th>名称</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="contactsBody">
+                <tr><td colspan="3" class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ===== 编辑模态框（完整版） ===== -->
+    <div id="editModal" class="modal">
+        <div class="modal-content admin-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> 编辑角色</h2>
+                <button class="close-btn" id="closeEditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-avatar" id="edit-avatar-preview"><i class="fas fa-robot"></i></div>
+
+                <!-- 基本信息 -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>显示名称 <span class="required">*</span></label>
+                        <input type="text" id="editName" placeholder="例如：鬼方佳代子">
+                    </div>
+                    <div class="form-group">
+                        <label>类型</label>
+                        <input type="text" id="editType" disabled>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>头像路径</label>
+                        <input type="text" id="editAvatar" placeholder="images/a.png（可选）">
+                        <span class="hint">把图片放进 static/images/ 目录，气泡与联系人列表会显示该头像</span>
+                        <span class="avatar-size-hint"><i class="fas fa-expand"></i>支持正方形或长方形图片，将完整显示不裁剪（建议 256×256 或 512×384）</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- AI 参数 -->
+                <div class="section-header">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>AI 参数设置</span>
+                    <span class="section-badge" id="paramStatus">仅 AI 角色有效</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="param-label">温度 (Temperature)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="temperature" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editTemp" min="0" max="2" step="0.05" value="0.7">
+                            <span class="range-value" id="tempDisplay">0.70</span>
+                        </div>
+                        <span class="hint">值越高回复越随机，越低越确定</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">Top P
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="top_p" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editTopP" min="0" max="1" step="0.05" value="0.9">
+                            <span class="range-value" id="topPDisplay">0.90</span>
+                        </div>
+                        <span class="hint">核采样参数，控制多样性</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="param-label">最大令牌数 (Max Tokens)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="max_tokens" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editMaxTokens" min="256" max="8192" step="128" value="2048">
+                            <span class="range-value" id="maxTokensDisplay">2048</span>
+                        </div>
+                        <span class="hint">单次回复的最大长度</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">频率惩罚 (Frequency Penalty)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="frequency_penalty" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editFreqPenalty" min="-2" max="2" step="0.1" value="0">
+                            <span class="range-value" id="freqPenaltyDisplay">0.0</span>
+                        </div>
+                        <span class="hint">越高越避免重复用词（减少复读）</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="param-label">存在惩罚 (Presence Penalty)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="presence_penalty" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editPresencePenalty" min="-2" max="2" step="0.1" value="0">
+                            <span class="range-value" id="presencePenaltyDisplay">0.0</span>
+                        </div>
+                        <span class="hint">越高越倾向谈论新话题</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">记忆窗口 (Memory Window)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="memory_window" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editMemoryWindow" min="10" max="100" step="5" value="30">
+                            <span class="range-value" id="memoryWindowDisplay">30</span>
+                        </div>
+                        <span class="hint">每攒够 N 条消息自动提炼一条长期记忆</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="param-label">上下文长度 (Context Window)
+                            <span class="param-controls">
+                                <button type="button" class="param-info-btn" data-param="context_window" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <div class="range-wrapper">
+                            <input type="range" id="editContextWindow" min="5" max="100" step="5" value="20">
+                            <span class="range-value" id="contextWindowDisplay">20</span>
+                        </div>
+                        <span class="hint">每次发送给 AI 的最近聊天消息条数（与记忆提取无关）</span>
+                    </div>
+                    <div class="form-group">
+                        <label>角色 ID</label>
+                        <input type="text" id="editContactId" disabled>
+                        <span class="hint">唯一标识，不可修改</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 角色设定 -->
+                <div class="section-header">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>角色设定</span>
+                    <span class="section-badge">仅 AI 角色有效</span>
+                </div>
+
+                <div class="form-group">
+                    <label>开场白 / 问候语</label>
+                    <textarea id="editGreeting" rows="3" placeholder="例如：你好，我是鬼方佳代子，很高兴认识你。"></textarea>
+                    <span class="hint">用户首次打开对话时显示</span>
+                </div>
+
+                <div class="form-group">
+                    <label>性格提示词 (System Prompt) <span class="required">*</span></label>
+                    <textarea id="editPrompt" rows="8" placeholder="例如：你是一位名叫鬼方佳代子的AI助手，性格温柔体贴..."></textarea>
+                    <span class="hint">定义 AI 的角色性格、说话风格、回复规则等</span>
+                </div>
+
+                <div class="form-group">
+                    <label>回复格式要求</label>
+                    <textarea id="editFormat" rows="3" placeholder="例如：每条回复不超过100字，使用括号描述动作"></textarea>
+                    <span class="hint">可选，会追加到提示词中</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>聊天背景 / 当前场景</label>
+                        <textarea id="editScene" rows="3" placeholder="例如：放学后的教室，窗外下着小雨，只有你们两个人"></textarea>
+                        <span class="hint">注入系统提示词的【当前场景】，限 500 字</span>
+                    </div>
+                    <div class="form-group">
+                        <label>角色外貌</label>
+                        <textarea id="editAppearance" rows="3" placeholder="例如：黑色长直发，穿着校服，眼神清冷，说话时习惯别过头"></textarea>
+                        <span class="hint">注入系统提示词的【你的外貌】，限 500 字</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 心情 / 亲密度（只读，系统自动维护） -->
+                <div class="section-header">
+                    <i class="fas fa-heart-pulse"></i>
+                    <span>心情与关系</span>
+                    <span class="section-badge">自动维护 · 仅 AI 角色有效</span>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>当前心情</label>
+                        <input type="text" id="editMood" disabled placeholder="（尚未生成）">
+                        <span class="hint">每轮对话后由 Workers AI 自动更新，注入【你此刻的心情】</span>
+                    </div>
+                    <div class="form-group">
+                        <label>亲密度 / 关系阶段</label>
+                        <input type="text" id="editIntimacy" disabled placeholder="—">
+                        <span class="hint">每轮 +1（上限 100）；0~20 刚认识 / 21~50 熟悉 / 51~80 亲近 / 81~100 亲密</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 长期记忆管理（AI 自动提取，可查看/修改/删除） -->
+                <div class="section-header">
+                    <i class="fas fa-brain"></i>
+                    <span>长期记忆</span>
+                    <span class="section-badge">AI 自动提取 · 仅 AI 角色有效</span>
+                </div>
+                <div class="memory-manage" id="memoryManage">
+                    <div class="memory-actions-row">
+                        <button type="button" class="btn-accent" id="addMemoryBtn" style="padding:6px 14px; font-size:0.8rem;">
+                            <i class="fas fa-plus"></i> 添加记忆
+                        </button>
+                        <button type="button" class="btn-accent" id="extractMemoryBtn" style="padding:6px 14px; font-size:0.8rem;">
+                            <i class="fas fa-wand-magic-sparkles"></i> 立即提炼
+                        </button>
+                        <button type="button" class="btn-secondary" id="clearMemoryBtn" style="padding:6px 14px; font-size:0.8rem;">
+                            <i class="fas fa-trash-can"></i> 清空全部
+                        </button>
+                    </div>
+                    <div id="memoryList" class="memory-list">
+                        <div class="memory-empty">暂无记忆（对话攒够记忆窗口条数后会自动提炼）</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 操作按钮 -->
+                <div class="form-actions">
+                    <button class="btn-secondary" id="cancelEdit">取消</button>
+                    <button class="btn-accent" id="saveEdit"><i class="fas fa-save"></i> 保存更改</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 归档确认模态框 ===== -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content admin-modal delete-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-box-archive"></i> 归档联系人</h2>
+                <button class="close-btn" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="delete-warning">
+                    <i class="fas fa-box-archive"></i>
+                    即将把 <strong id="deleteName"></strong> 移入<b>归档区</b>。<br>
+                    聊天记录、记忆、承诺与角色设定都会<b>完整保留</b>，<br>
+                    之后可在「归档区」中恢复，或在那里彻底删除。
+                </p>
+                <div class="form-actions">
+                    <button class="btn-secondary" id="cancelDelete">取消</button>
+                    <button class="btn-accent" id="confirmDelete"><i class="fas fa-box-archive"></i> 确认归档</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast 消息 ===== -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/js/theme.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="/js/param-info.js"></script>
+    <script src="/js/export.js"></script>
+    <script src="roles.js"></script>
+</body>
+</html>

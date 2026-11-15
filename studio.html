@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外观与玩法中心 · Personal Chat</title>
+    <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <!-- 首屏应用偏好，避免进页面闪一下默认配色 -->
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+            if (t !== 'system') document.documentElement.setAttribute('data-theme', t);
+            try {
+                document.documentElement.setAttribute('data-accent', localStorage.getItem('enh_accent') || 'graphite');
+                document.documentElement.setAttribute('data-fontsize', localStorage.getItem('enh_fontsize') || 'normal');
+                document.documentElement.setAttribute('data-density', localStorage.getItem('enh_density') || 'normal');
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="/css/studio.css">
+</head>
+<body class="studio-body">
+
+    <a class="studio-skip" href="#studioMain">跳到主要内容</a>
+
+    <header class="studio-topbar">
+        <a class="studio-back" href="/"><i class="fas fa-chevron-left"></i><span>返回聊天</span></a>
+        <div class="studio-brand"><i class="fas fa-wand-magic-sparkles"></i> 外观与玩法中心</div>
+        <span class="studio-version" data-app-version>v0.14.4</span>
+    </header>
+
+    <div class="studio-wrap">
+        <nav class="studio-nav" id="studioNav" aria-label="分区导航">
+            <a href="#studioPreview" class="active">实时预览</a>
+            <a href="#studioTheme">主题与配色</a>
+            <a href="#studioScenes">场景预设</a>
+            <a href="#studioBackground">聊天背景</a>
+            <a href="#studioAmbience">氛围特效</a>
+            <a href="#studioReading">阅读舒适度</a>
+            <a href="#studioLayout">排版</a>
+            <a href="#studioMotion">动画</a>
+            <a href="#studioVoice">语音朗读</a>
+            <a href="#studioPins">联系人置顶</a>
+            <a href="#studioData">数据与洞察</a>
+            <a href="#studioPlay">玩法与快捷键</a>
+            <a href="#studioAbout">关于与重置</a>
+        </nav>
+
+        <main class="studio-main" id="studioMain">
+
+            <!-- ============ 实时预览 ============ -->
+            <section class="studio-card studio-preview-card" id="studioPreview">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-eye"></i> 实时预览</h2>
+                    <span class="studio-hint">下面每一项改动，这里立刻生效</span>
+                </div>
+                <div class="studio-mock">
+                    <div class="message received">
+                        <div class="msg-row">
+                            <div class="msg-avatar"><i class="fas fa-robot"></i></div>
+                            <div class="msg-bubble"><div class="message-text markdown-body">今晚的雨，听起来像有人在窗外轻轻敲。<span class="ai-em">你听。</span></div></div>
+                        </div>
+                    </div>
+                    <div class="message sent">
+                        <div class="msg-row">
+                            <div class="msg-avatar"><i class="fas fa-user"></i></div>
+                            <div class="msg-bubble"><div class="message-text markdown-body">听到了。要不要<span class="ai-em">一起听</span>一会儿？</div></div>
+                        </div>
+                    </div>
+                    <div class="message sent">
+                        <div class="msg-row">
+                            <div class="msg-avatar"><i class="fas fa-user"></i></div>
+                            <div class="msg-bubble"><div class="message-text markdown-body"><span class="msg-action-text">把窗推开一条缝，让雨声进来</span></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="studio-preview-actions">
+                    <span class="studio-hint" id="studioStateLine">石墨 · 无氛围 · 标准字号 · 舒适</span>
+                    <button class="studio-btn" id="studioTrySpeech" type="button">
+                        <i class="fas fa-volume-high"></i> 试听朗读
+                    </button>
+                </div>
+            </section>
+
+            <!-- ============ 主题与配色 ============ -->
+            <section class="studio-card" id="studioTheme">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-palette"></i> 主题与配色</h2>
+                    <span class="studio-hint">已按 WCAG AA 调校：气泡内文字 ≥ 7:1，按钮文字 ≥ 4.5:1</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">明暗主题</div>
+                    <div class="studio-seg" id="themeSeg">
+                        <button type="button" data-mode="system">系统</button>
+                        <button type="button" data-mode="light">明亮</button>
+                        <button type="button" data-mode="dark">黑暗</button>
+                    </div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">配色方案 <b id="accentCurrent">石墨</b></div>
+                    <div class="accent-grid" id="accentGrid"></div>
+                    <p class="studio-hint">
+                        每张卡片就是实际效果：浅色块是「我发出的气泡」，下面小胶囊是「主按钮」。
+                        对比度标注中绿色为通过，红色为不达标（正常情况不应出现红色）。
+                    </p>
+                </div>
+            </section>
+
+            <!-- ============ 场景预设 ============ -->
+            <section class="studio-card" id="studioScenes">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-wand-sparkles"></i> 场景预设</h2>
+                    <span class="studio-hint">一次切换「明暗 + 配色 + 氛围 + 背景 + 排版 + 动画」</span>
+                </div>
+                <div class="accent-grid" id="sceneGrid"></div>
+                <div class="studio-inline-row">
+                    <button class="studio-btn primary" type="button" id="sceneSave">
+                        <i class="fas fa-plus"></i> 把当前外观存为预设
+                    </button>
+                    <button class="studio-btn" type="button" id="sceneClear">
+                        <i class="fas fa-broom"></i> 清空自定义预设
+                    </button>
+                </div>
+                <p class="studio-hint">
+                    内置 4 套不可删除；自定义最多 12 套，存在本机浏览器。场景只改外观，不动聊天数据。
+                </p>
+            </section>
+
+            <!-- ============ 聊天背景 ============ -->
+            <section class="studio-card" id="studioBackground">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-image"></i> 聊天背景</h2>
+                    <span class="studio-hint">内置纹理是纯 CSS（无图片请求）；自定义图会压到 1600px 存在本机浏览器</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">内置纹理 <b id="bgCurrent">无</b></div>
+                    <div class="tile-grid" id="bgGrid"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">自定义图片</div>
+                    <div class="studio-inline-row">
+                        <label class="studio-btn" for="bgFile"><i class="fas fa-upload"></i> 选择本地图片</label>
+                        <input type="file" id="bgFile" accept="image/*" hidden>
+                        <button class="studio-btn danger" type="button" id="bgClear"><i class="fas fa-trash-can"></i> 清除背景</button>
+                    </div>
+                    <div class="studio-inline-row">
+                        <input type="text" id="bgUrl" class="studio-input" placeholder="或粘贴图片链接 / /images/xxx.jpg">
+                        <button class="studio-btn" type="button" id="bgUrlApply"><i class="fas fa-link"></i> 使用链接</button>
+                    </div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">模糊 <b id="bgBlurValue">0px</b>（仅本地图片）</div>
+                    <div class="studio-inline-row">
+                        <input type="range" id="bgBlur" min="0" max="12" step="1" value="0">
+                    </div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">遮罩浓度 <b id="bgDimValue">18%</b>（越高背景越暗、文字越清晰）</div>
+                    <div class="studio-inline-row">
+                        <input type="range" id="bgDim" min="0" max="60" step="2" value="18">
+                    </div>
+                </div>
+
+                <div class="studio-status" id="bgStatus">当前：无背景</div>
+                <p class="studio-hint">
+                    自定义图片保存在这台设备的 IndexedDB 里（不占 localStorage 配额、不上传服务器），换设备/清缓存需要重新选择。
+                </p>
+            </section>
+
+            <!-- ============ 氛围特效 ============ -->
+            <section class="studio-card" id="studioAmbience">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-sparkles"></i> 氛围特效</h2>
+                    <span class="studio-hint">纯 Canvas 绘制，单个动画循环，后台标签页自动暂停</span>
+                </div>
+                <div class="tile-grid" id="ambienceGrid"></div>
+                <p class="studio-hint">
+                    选中后会直接在本页背景上飘起来（所以这里就是预览）。
+                    系统开启「减少动态效果」时会自动不播放。
+                </p>
+            </section>
+
+            <!-- ============ 阅读舒适度 ============ -->
+            <section class="studio-card" id="studioReading">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-text-height"></i> 阅读舒适度</h2>
+                    <span class="studio-hint">只影响消息气泡，不改变按钮与侧边栏</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">消息字号 <b id="fontCurrent">标准</b></div>
+                    <div class="studio-seg" id="fontSeg"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">气泡疏密 <b id="densityCurrent">舒适</b></div>
+                    <div class="studio-seg" id="densitySeg"></div>
+                </div>
+
+                <p class="studio-hint">
+                    「疏密」会同时调整气泡内边距、行高与消息间距，三档差别明显；
+                    上方实时预览可直接对比。
+                </p>
+            </section>
+
+            <!-- ============ 排版 ============ -->
+            <section class="studio-card" id="studioLayout">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-align-left"></i> 排版</h2>
+                    <span class="studio-hint">改完立刻在上方预览里生效</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">气泡形状 <b id="bubbleCurrent">微信式</b></div>
+                    <div class="studio-seg" id="bubbleSeg"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">内容行宽 <b id="maxwCurrent">全宽</b></div>
+                    <div class="studio-seg" id="maxwSeg"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">头像大小 <b id="avatarCurrent">中 38</b></div>
+                    <div class="studio-seg" id="avatarSeg"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">时间标签 <b id="timeCurrent">完整日期</b></div>
+                    <div class="studio-seg" id="timeSeg"></div>
+                    <p class="studio-hint">相对时间会显示成「今天 14:20 / 昨天 09:12 / 周三 20:01」，聊天页会重新渲染一次时间标签。</p>
+                </div>
+            </section>
+
+            <!-- ============ 动画 ============ -->
+            <section class="studio-card" id="studioMotion">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-wand-sparkles"></i> 动画与性能</h2>
+                    <span class="studio-hint">系统开启「减少动态效果」时会自动降级</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">消息入场 <b id="animCurrent">默认</b></div>
+                    <div class="studio-seg" id="animSeg"></div>
+                </div>
+
+                <label class="enh-switch">
+                    <span class="enh-switch-label">
+                        性能模式
+                        <small>关闭全部动画、粒子与过渡；老设备 / 投屏 / 录屏时更稳</small>
+                    </span>
+                    <input type="checkbox" id="perfMode">
+                </label>
+            </section>
+
+            <!-- ============ 语音朗读 ============ -->
+            <section class="studio-card" id="studioVoice">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-volume-high"></i> 语音朗读</h2>
+                    <span class="studio-hint">用系统语音，不上传内容、不消耗 API 额度</span>
+                </div>
+
+                <label class="enh-switch">
+                    <span class="enh-switch-label">
+                        自动朗读 AI 回复
+                        <small>每条回复完成后自动念一遍；聊天页双击任意 AI 气泡也可单独朗读</small>
+                    </span>
+                    <input type="checkbox" id="ttsAuto">
+                </label>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">语速</div>
+                    <div class="studio-inline-row">
+                        <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1">
+                        <span class="studio-rate-value" id="ttsRateValue">1.0x</span>
+                        <button class="studio-btn" type="button" id="ttsTest"><i class="fas fa-play"></i> 试听</button>
+                        <button class="studio-btn" type="button" id="ttsStop"><i class="fas fa-stop"></i> 停止</button>
+                    </div>
+                </div>
+
+                <div class="studio-status" id="ttsStatus">正在检测系统语音…</div>
+            </section>
+
+            <!-- ============ 联系人置顶 ============ -->
+            <section class="studio-card" id="studioPins">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-thumbtack"></i> 联系人置顶</h2>
+                    <span class="studio-hint">置顶的联系人会排在聊天列表最前</span>
+                </div>
+                <div class="pin-list" id="pinList">
+                    <div class="studio-hint">加载中…</div>
+                </div>
+                <p class="studio-hint">
+                    置顶保存在本机浏览器，不会写数据库、不影响其他设备。
+                    聊天页也可以直接悬停联系人、点右侧图钉。
+                </p>
+            </section>
+
+            <!-- ============ 数据与洞察 ============ -->
+            <section class="studio-card" id="studioData">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-database"></i> 数据与洞察</h2>
+                    <span class="studio-hint">备份 / 导入 / 本机用量 / 年度热力图</span>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">备份与恢复</div>
+                    <div class="studio-inline-row">
+                        <button class="studio-btn primary" type="button" id="backupBtn">
+                            <i class="fas fa-file-export"></i> 导出完整备份
+                        </button>
+                        <label class="studio-btn" for="importFile">
+                            <i class="fas fa-file-import"></i> 选择 JSON 导入
+                        </label>
+                        <input type="file" id="importFile" accept="application/json,.json" hidden>
+                    </div>
+                    <p class="studio-hint">
+                        「导出完整备份」包含全部角色的对话（JSON）；导入支持本项目导出的单角色 JSON 或整包备份。
+                        导入前会先算好「会写入多少条、跳过多少条重复」，确认后才写库。
+                    </p>
+                </div>
+
+                <div class="studio-import" id="importPanel" hidden>
+                    <div class="import-head">
+                        <b id="importSummary">—</b>
+                        <button class="studio-btn" id="importCancel" type="button">取消</button>
+                    </div>
+
+                    <div class="studio-field">
+                        <div class="studio-field-label">导入到</div>
+                        <div class="studio-inline-row">
+                            <select id="importTarget" class="studio-select"></select>
+                            <input type="text" id="importNewName" class="studio-input" placeholder="新角色名称（可留空用文件名）" hidden>
+                        </div>
+                    </div>
+
+                    <div class="studio-field">
+                        <div class="studio-field-label">模式</div>
+                        <div class="studio-seg" id="importModeSeg">
+                            <button type="button" data-mode="merge" class="active">合并（跳过重复）</button>
+                            <button type="button" data-mode="replace">覆盖该角色历史</button>
+                        </div>
+                    </div>
+
+                    <div class="import-contacts" id="importContacts" hidden></div>
+
+                    <div class="studio-inline-row">
+                        <button class="studio-btn" id="importDryRun" type="button">
+                            <i class="fas fa-magnifying-glass"></i> 先预览
+                        </button>
+                        <button class="studio-btn primary" id="importRun" type="button">
+                            <i class="fas fa-file-import"></i> 开始导入
+                        </button>
+                    </div>
+                    <div class="studio-hint" id="importResult"></div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">本机用量</div>
+                    <div id="usageBox" class="data-grid"></div>
+                    <div class="studio-inline-row">
+                        <button class="studio-btn" type="button" id="clearCacheBtn">
+                            <i class="fas fa-broom"></i> 清理本地缓存
+                        </button>
+                        <span class="studio-hint" id="usageHint"></span>
+                    </div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">会话洞察</div>
+                    <div id="dataBox">
+                        <div class="studio-hint">登录后自动加载…</div>
+                    </div>
+                    <div class="studio-inline-row">
+                        <button class="studio-btn" type="button" id="dataRefresh"><i class="fas fa-rotate"></i> 刷新</button>
+                        <a class="studio-btn" href="/"><i class="fas fa-comments"></i> 聊天页完整面板</a>
+                    </div>
+                </div>
+
+                <div class="studio-field">
+                    <div class="studio-field-label">年度热力图（最近 53 周）</div>
+                    <div id="heatmapBox" class="heatmap">
+                        <div class="studio-hint">登录后自动加载…</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 玩法与快捷键 ============ -->
+            <section class="studio-card" id="studioPlay">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-gamepad"></i> 玩法与快捷键</h2>
+                    <span class="studio-hint">本地指令不发送到服务端，不消耗额度</span>
+                </div>
+
+                <table class="studio-table">
+                    <thead>
+                        <tr><th style="width:46%;">本地指令</th><th>效果</th></tr>
+                    </thead>
+                    <tbody id="cmdTableBody">
+                        <tr><td><code>/me 伸了个懒腰</code></td><td>动作气泡（斜体），并照常发给角色</td></tr>
+                        <tr><td><code>/roll 2d6+1</code></td><td>掷骰子，显示每颗点数与合计（默认 1d20）</td></tr>
+                        <tr><td><code>/coin</code></td><td>抛硬币：正面 / 反面</td></tr>
+                        <tr><td><code>/pick 火锅 烧烤 拉面</code></td><td>随机选一个，也可用竖线分隔</td></tr>
+                        <tr><td><code>/time</code></td><td>本地时间 + 北京时间</td></tr>
+                        <tr><td><code>/cmd 用更温柔的语气</code></td><td>导演词：只影响下一次生成，不产生消息</td></tr>
+                        <tr><td><code>/help</code></td><td>在聊天页显示指令小抄</td></tr>
+                    </tbody>
+                </table>
+
+                <table class="studio-table">
+                    <thead>
+                        <tr><th style="width:46%;">快捷键 / 鼠标</th><th>作用</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>Ctrl + Shift + P</code></td><td>命令面板（40 条命令）</td></tr>
+                        <tr><td><code>Ctrl + Shift + L</code></td><td>朗读最后一条 AI 回复</td></tr>
+                        <tr><td><code>Ctrl + K</code></td><td>搜索聊天记录</td></tr>
+                        <tr><td><code>Esc</code></td><td>关闭弹窗 / 停止朗读 / 取消引用</td></tr>
+                        <tr><td>双击 AI 气泡</td><td>朗读这一条</td></tr>
+                        <tr><td>双击聊天空白</td><td>撒一把花瓣</td></tr>
+                        <tr><td>悬停联系人 → 图钉</td><td>置顶 / 取消置顶</td></tr>
+                        <tr><td>标题栏 <b>时钟</b> 图标 / 命令面板「时光机」</td><td>回放某一天的对话（可暂停、倍速）</td></tr>
+                        <tr><td>右键消息 →「生成分享卡片」</td><td>把这条（含上一条问题）画成一张 PNG</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- ============ 关于与重置 ============ -->
+            <section class="studio-card" id="studioAbout">
+                <div class="studio-card-head">
+                    <h2><i class="fas fa-circle-info"></i> 关于与重置</h2>
+                </div>
+                <p class="studio-hint">
+                    当前版本 <b data-app-version>v0.14.4</b> ·
+                    所有偏好都保存在这台设备的浏览器里（localStorage），换设备需要重新设置。
+                </p>
+                <div class="studio-about-row">
+                    <button class="studio-btn" type="button" id="openChangelogBtn"><i class="fas fa-book"></i> 更新日志</button>
+                    <a class="studio-btn" href="https://bypc.us.ci/docs/" target="_blank" rel="noopener"><i class="fas fa-book-open"></i> 使用手册</a>
+                    <button class="studio-btn danger" type="button" id="resetPrefs"><i class="fas fa-rotate-left"></i> 恢复默认外观</button>
+                </div>
+            </section>
+
+            <div class="studio-foot">
+                Personal Chat · 外观与玩法中心 · <span data-app-version>v0.14.4</span>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/version.js"></script>
+    <script src="/js/modal.js"></script>
+    <script src="/js/marked.min.js"></script>
+    <script src="/js/purify.min.js"></script>
+    <!-- enhance.js 提供「能力」：配色 / 氛围 / 字号 / 朗读 / 置顶 -->
+    <script src="/js/enhance.js"></script>
+    <!-- studio.js 只负责这个页面的界面 -->
+    <script src="/js/studio.js"></script>
+    <!-- 数据区（备份 / 导入 / 用量 / 热力图）单独一个文件，避免单文件过长 -->
+    <script src="/js/studio-data.js"></script>
+</body>
+</html>

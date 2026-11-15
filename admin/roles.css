@@ -1,0 +1,602 @@
+/* static/admin/roles.css —— 角色管理页专属样式
+   公共外壳（导航 / 按钮 / 面板 / 统计栏）与动画见 AGM.css。 */
+
+/* ===== 页面入场 ===== */
+.admin-header {
+    animation: dropIn 0.4s ease backwards;
+}
+
+.stats-bar {
+    animation: riseIn 0.45s 0.06s ease backwards;
+}
+
+.toolbar-row {
+    animation: riseIn 0.45s 0.12s ease backwards;
+}
+
+.table-container {
+    animation: riseIn 0.45s 0.18s ease backwards;
+}
+
+@keyframes dropIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ===== 工具栏：搜索 + 新建 ===== */
+.toolbar-row {
+    max-width: var(--admin-page-width);
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+}
+
+.toolbar-row .btn-primary,
+.toolbar-row .btn-accent {
+    flex-shrink: 0;
+    min-width: 0;
+    margin-left: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.toolbar-row .btn-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+/* ===== 搜索框 ===== */
+.search-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.search-wrapper input {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 18px 9px 42px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                background-color var(--transition-base);
+}
+
+.search-wrapper input:hover {
+    border-color: var(--text-tertiary);
+}
+
+.search-wrapper input:focus {
+    border-color: var(--text-secondary);
+    box-shadow: 0 0 0 3px var(--hover-bg);
+    background: var(--card-bg);
+}
+
+.search-wrapper input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+[data-theme="dark"] .search-wrapper input {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .search-wrapper input:focus {
+    border-color: var(--text-secondary);
+}
+
+[data-theme="dark"] .search-wrapper input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* ===== 表格 ===== */
+.table-container {
+    max-width: var(--admin-page-width);
+    margin: 0 auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table-container thead {
+    background: var(--hover-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-container th {
+    padding: 12px 16px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table-container td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    text-align: center;
+    vertical-align: middle;
+    word-break: break-word;
+}
+
+.table-container tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+.table-container tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 固定列宽：总宽只随容器宽度变化
+   0.14.4：列表由 6 列精简为「类型 / 名称 / 操作」3 列，
+   名称列吃掉多余空间，手机端不再挤成一团（参数仍可在编辑弹窗查看）。 */
+.table-container th:nth-child(1) { width: 14%; }
+.table-container th:nth-child(2) { width: 50%; }
+.table-container th:nth-child(3) { width: 36%; }
+
+td.loading-text {
+    padding: 40px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.loading-text i {
+    margin-right: 8px;
+}
+
+/* ===== 类型标签 ===== */
+.badge-ai,
+.badge-user {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--hover-bg);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* 归档标记（0.14.4）：列表精简为 3 列后不再单占一列，跟在名称后面显示 */
+.archived-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 1px 8px;
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 500;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* ===== 行内操作按钮 ===== */.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color var(--transition-fast),
+                color var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: var(--card-bg);
+}
+
+.action-btn i {
+    font-size: 0.7rem;
+}
+
+.action-btn:not(:disabled):active {
+    transform: scale(0.95);
+}
+
+.action-btn.action-danger {
+    background: color-mix(in srgb, var(--admin-danger-strong) 5%, transparent);
+    border-color: color-mix(in srgb, var(--admin-danger-strong) 35%, transparent);
+    color: var(--admin-danger-strong);
+}
+
+.action-btn.action-danger:hover {
+    background: var(--admin-danger-strong);
+    border-color: var(--admin-danger-strong);
+    color: var(--accent-text);
+}
+
+[data-theme="dark"] .action-btn.action-danger {
+    background: color-mix(in srgb, var(--admin-danger-light) 6%, transparent);
+    border-color: color-mix(in srgb, var(--admin-danger-light) 40%, transparent);
+    color: var(--admin-danger-light);
+}
+
+[data-theme="dark"] .action-btn.action-danger:hover {
+    background: var(--admin-danger-light);
+    border-color: var(--admin-danger-light);
+    color: var(--bg);
+}
+
+.row-actions {
+    white-space: nowrap;
+}
+
+.row-actions .action-btn {
+    margin-right: 6px;
+}
+
+/* ===== 模态框 ===== */
+.admin-modal {
+    max-width: 720px;
+    width: 92%;
+    max-height: 92vh;
+    overflow-y: auto;
+}
+
+.modal-body {
+    padding: 1.5rem 2rem;
+}
+
+.admin-modal::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-modal::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+.admin-modal::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-light);
+}
+
+.divider {
+    height: 1px;
+    margin: 18px 0;
+    background: var(--border-color);
+}
+
+/* ===== 分区标题 ===== */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.section-header i {
+    color: var(--primary-light);
+    font-size: 1rem;
+}
+
+.section-badge {
+    margin-left: auto;
+    padding: 2px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+    font-weight: 400;
+}
+
+/* ===== 表单 ===== */
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.form-group label .required {
+    color: var(--admin-danger);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+    width: 100%;
+    padding: 8px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: var(--text-secondary);
+    box-shadow: 0 0 0 3px var(--hover-bg);
+}
+
+.form-group input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    border-radius: 16px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.range-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.range-wrapper input[type="range"] {
+    flex: 1;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 4px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.range-wrapper input[type="range"]::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+    -webkit-appearance: none;
+}
+
+.range-wrapper input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.range-wrapper input[type="range"]:disabled {
+    opacity: 0.4;
+}
+
+.range-value {
+    min-width: 48px;
+    color: var(--primary-light);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.hint {
+    display: block;
+    margin-top: 3px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+/* ===== 归档 / 删除 ===== */
+.delete-modal {
+    max-width: 460px;
+    width: 92%;
+}
+
+.delete-warning {
+    padding: 8px 4px;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.delete-warning i {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--admin-danger-strong);
+    font-size: 1.6rem;
+}
+
+.delete-warning b {
+    color: var(--admin-danger-strong);
+}
+
+[data-theme="dark"] .delete-warning i,
+[data-theme="dark"] .delete-warning b {
+    color: var(--admin-danger-light);
+}
+
+/* ===== 微交互 ===== */
+.stat-number.flash {
+    animation: numFlash 0.6s ease;
+}
+
+@keyframes numFlash {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.25); color: var(--primary-light); }
+    100% { transform: scale(1); }
+}
+
+.btn-icon.spinning {
+    animation: spin 0.7s linear infinite;
+}
+
+#createContactBtn.pulse {
+    animation: btnPulse 0.8s ease;
+}
+
+@keyframes btnPulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-primary) 25%, transparent); }
+    100% { box-shadow: 0 0 0 10px transparent; }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+    .toolbar-row {
+        flex-wrap: wrap;
+        padding: 0 12px;
+    }
+
+    .toolbar-row .search-wrapper {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        order: 3;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .table-container table {
+        min-width: 0;
+    }
+
+    .admin-modal {
+        max-width: 98%;
+        margin: 10px auto;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .section-header {
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+    }
+
+    .section-badge {
+        padding: 1px 10px;
+        font-size: 0.55rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toast {
+        width: 90%;
+        padding: 10px 16px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .range-wrapper {
+        flex-wrap: nowrap;
+    }
+
+    .range-value {
+        min-width: 36px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .admin-modal {
+        max-width: 850px;
+    }
+
+    .form-row {
+        gap: 30px;
+    }
+
+    .table-container table {
+        font-size: 0.95rem;
+    }
+
+    .table-container th,
+    .table-container td {
+        padding: 14px 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-header,
+    .stats-bar,
+    .toolbar-row,
+    .table-container {
+        animation: none;
+    }
+
+    .stat-item {
+        transition: none;
+    }
+}

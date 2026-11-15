@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 第 9 项：Turnstile 站点密钥（不再硬编码）
+         该值由服务端注入：functions/_middleware.js 读取环境变量 TURNSTILE_SITE_KEY，
+         启用时把下面 content 里的值替换成真实站点密钥；未配置 / 未开启时保持为空 = 不渲染验证码。
+         服务端密钥 TURNSTILE_SECRET 只存在于服务端，任何情况下都不会下发到前端。 -->
+    <meta name="turnstile-site-key" content="">
+    <title>Personal Chat</title>
+    <!-- 微信气泡图标，随主题明暗切换 -->
+    <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <!-- 首屏即应用主题：默认明亮，优先使用本地存储的明暗主题（避免闪烁） -->
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            // 0.10.0：配色 / 字号 / 密度同样在首屏应用，避免刷新时闪一下默认样式
+            try {
+                var a = localStorage.getItem('enh_accent') || 'graphite';
+                var f = localStorage.getItem('enh_fontsize') || 'normal';
+                var d = localStorage.getItem('enh_density') || 'normal';
+                document.documentElement.setAttribute('data-accent', a);
+                document.documentElement.setAttribute('data-fontsize', f);
+                document.documentElement.setAttribute('data-density', d);
+            } catch (e) {}
+            window.updateFavicon = function () {
+                var d = document.documentElement.getAttribute('data-theme');
+                var l = document.getElementById('app-favicon');
+                if (l) l.setAttribute('href', d === 'dark' ? '/favicon-dark.svg' : '/favicon.svg');
+            };
+            window.updateFavicon();
+            // 兜底：即使脚本异常，5 秒后也隐藏加载页
+            setTimeout(function () {
+                var s = document.getElementById('splash-screen');
+                if (s) s.classList.add('hide');
+            }, 5000);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+
+    <!-- ===== 加载页（打开/跳转时显示） ===== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-logo"><i class="fas fa-comments"></i></div>
+        <div class="splash-title">Personal Chat</div>
+        <div class="loader"></div>
+    </div>
+
+    <!-- ===== 登录界面 ===== -->
+    <div id="auth-container" class="auth-container">
+        <div id="auth-content">
+            <div class="auth-loader">
+                <div class="loader"></div>
+                <p>正在加载认证界面...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 聊天界面 ===== -->
+    <div id="chat-container" class="chat-container">
+
+        <!-- 侧边栏（联系人列表） -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span><i class="fas fa-comments"></i> 联系人</span>
+                <button class="collapse-btn" id="collapseBtn" title="收起侧边栏">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <div class="contacts-list" id="contacts-list">
+                <!-- 动态加载 -->
+            </div>
+        </aside>
+
+        <!-- 展开按钮（侧边栏收起时显示） -->
+        <button class="expand-btn" id="expandBtn" title="展开侧边栏" style="display:none;">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <!-- 主聊天区域 -->
+        <main class="main">
+            <header class="header">
+                <div class="user-profile">
+                    <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=random" alt="用户头像">
+                    <div>
+                        <h1 id="username">Personal Chat</h1>
+                        <span id="user-status">状态: 正在连接...</span>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <!-- 0.10.0：命令面板（Ctrl+Shift+P） -->
+                    <button id="enhPaletteBtn" class="header-btn" title="命令面板（Ctrl+Shift+P）">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </button>
+                    <button id="rolesLink" class="header-btn" title="管理后台"><i class="fas fa-cogs"></i></button>
+                    <button id="adminLink" class="header-btn" title="系统管理" style="display:none;"><i class="fas fa-user-shield"></i></button>
+                    <button id="syncBtn" class="header-btn" title="强制同步云端数据">
+                        <i class="fas fa-cloud-download-alt"></i>
+                    </button>
+                    <button id="profile-btn" title="个人资料"><i class="fas fa-user"></i></button>
+                    <button id="settings-btn" title="设置"><i class="fas fa-cog"></i></button>
+                    <button id="logout-btn" title="退出登录"><i class="fas fa-sign-out-alt"></i></button>
+                    <!-- 0.14.4：移动端收纳（低频账号操作收进「⋮」面板） -->
+                    <button id="userMoreBtn" class="user-more-btn" title="更多账号操作" aria-haspopup="dialog" aria-expanded="false" aria-controls="userMorePanel">
+                        <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 当前联系人标题 -->
+            <div class="chat-header">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" title="联系人列表">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 id="chat-header">请选择联系人</h2>
+                <span class="subheader" id="chat-subheader">选择一个联系人开始对话</span>
+                <div class="chat-header-actions">
+                    <button id="searchBtn" class="chat-header-btn" title="搜索聊天记录">
+                        <i class="fas fa-magnifying-glass"></i>
+                    </button>
+                    <!-- 0.13.0：时光机（回放某一天的对话） -->
+                    <button id="replayBtn" class="chat-header-btn" title="时光机：回放某一天的对话">
+                        <i class="fas fa-clock-rotate-left"></i>
+                    </button>
+                    <button id="favoritesBtn" class="chat-header-btn" title="我的收藏" style="display:none;">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button id="exportBtn" class="chat-header-btn" title="导出对话" style="display:none;">
+                        <i class="fas fa-file-export"></i>
+                    </button>
+                    <button id="commitmentsBtn" class="chat-header-btn" title="AI 答应你的事" style="display:none;">
+                        <i class="fas fa-handshake"></i>
+                    </button>
+                    <button id="chatAiSettingsBtn" class="chat-header-btn" title="AI 模型设置" style="display:none;">
+                        <i class="fas fa-sliders"></i>
+                    </button>
+                    <button id="clearHistoryBtn" class="chat-header-btn" title="删除聊天记录" style="display:none;">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                    <!-- 0.14.4：移动端「更多」，收纳上面这些低频操作（桌面端不显示） -->
+                    <button id="chatMoreBtn" class="chat-header-btn chat-more-btn" title="更多操作" aria-haspopup="dialog" aria-expanded="false" aria-controls="chatMorePanel">
+                        <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 移动端侧边栏遮罩 -->
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+            <div id="chatBox" class="message-area">
+                <!-- 消息动态渲染 -->
+            </div>
+
+            <!-- 快捷回到最新消息 -->
+            <button class="jump-bottom-btn" id="jumpBottomBtn" title="回到最新消息">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+
+            <footer class="input-area">
+                <div class="input-wrap">
+                    <div id="directorBox" class="director-box" style="display:none;">
+                        <span class="director-label"><i class="fas fa-clapperboard"></i> 导演词（临时AI提示词，仅本次对话生效）</span>
+                        <input type="text" id="directorInput" placeholder="例如：请用活泼的语气回复，多加点俏皮表情" autocomplete="off">
+                    </div>
+                    <div id="quoteBox" class="quote-box" style="display:none;">
+                        <span class="quote-label"><i class="fas fa-reply"></i> 正在回复</span>
+                        <span id="quoteText" class="quote-text"></span>
+                        <button id="quoteCancel" class="quote-cancel" title="取消引用"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="input-row">
+                        <button id="directorToggleBtn" class="chat-header-btn" title="导演词（临时AI提示词）">
+                            <i class="fas fa-clapperboard"></i>
+                        </button>
+                        <textarea id="msgInput" rows="1" placeholder="输入消息..." autocomplete="off"></textarea>
+                        <button id="sendButton"><i class="fas fa-paper-plane"></i> 发送</button>
+                    </div>
+                </div>
+            </footer>
+
+            <div class="status-bar">
+                <span id="status">状态: 正在初始化...</span>
+                <span id="online-count">0人在线</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== 模态框 ===== -->
+    <!-- 个人资料（可改名称/密码/头像路径） -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>个人资料</h2>
+                <button id="close-profile" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-avatar" id="profile-avatar-preview"><i class="fas fa-user"></i></div>
+                <div class="form-group">
+                    <label for="profile-username">用户名</label>
+                    <input type="text" id="profile-username" placeholder="输入新用户名">
+                </div>
+                <div class="form-group">
+                    <label for="profile-avatar-path">头像路径（如 images/a.png，留空使用默认）</label>
+                    <input type="text" id="profile-avatar-path" placeholder="images/a.png">
+                    <span class="settings-hint">把图片放进项目的 static/images/ 目录即可通过该路径引用</span>
+                    <span class="avatar-size-hint"><i class="fas fa-expand"></i>支持正方形或长方形图片，将完整显示不裁剪（建议 256×256 或 512×384）</span>
+                </div>
+                <div class="form-group password-group">
+                    <label for="current-password">当前密码（用于验证）</label>
+                    <div class="password-container">
+                        <input type="password" id="current-password" placeholder="输入当前密码">
+                        <button class="toggle-password" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group password-group">
+                    <label for="new-password">新密码</label>
+                    <div class="password-container">
+                        <input type="password" id="new-password" placeholder="输入新密码（可选）">
+                        <button class="toggle-password" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="save-profile" class="btn-accent block">保存更改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sliders-h"></i> 设置</h2>
+                <button id="close-settings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body settings-body">
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-palette"></i> 主题外观</div>
+                    <div class="settings-options theme-options">
+                        <button class="settings-option-btn" data-theme="system">
+                            <i class="fas fa-adjust"></i> 系统
+                        </button>
+                        <button class="settings-option-btn" data-theme="light">
+                            <i class="fas fa-sun"></i> 明亮
+                        </button>
+                        <button class="settings-option-btn" data-theme="dark">
+                            <i class="fas fa-moon"></i> 黑暗
+                        </button>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-sparkles"></i> 外观与玩法</div>
+                    <div class="settings-hint" style="text-align:left;">
+                        配色、氛围特效、字号疏密、语音朗读、联系人置顶、指令与快捷键 —— 都统一收在「外观与玩法中心」里，带实时预览。
+                    </div>
+                    <a class="btn-secondary" href="/studio" style="width:100%;margin-top:10px;">
+                        <i class="fas fa-wand-magic-sparkles"></i> 打开外观与玩法中心
+                    </a>
+                    <div class="settings-hint" style="text-align:left;margin-top:8px;">
+                        快捷键 <kbd style="font-family:inherit;border:1px solid var(--border-color);border-radius:4px;padding:0 4px;">Ctrl</kbd> +
+                        <kbd style="font-family:inherit;border:1px solid var(--border-color);border-radius:4px;padding:0 4px;">Shift</kbd> +
+                        <kbd style="font-family:inherit;border:1px solid var(--border-color);border-radius:4px;padding:0 4px;">P</kbd>
+                        可以随时呼出命令面板
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-exchange-alt"></i> 消息接收模式</div>
+                    <div class="settings-options mode-options">
+                        <button class="settings-option-btn" data-mode="sse">SSE</button>
+                        <button class="settings-option-btn" data-mode="short">短轮询</button>
+                        <button class="settings-option-btn" data-mode="long">长轮询</button>
+                    </div>
+                    <div class="settings-hint">切换模式会自动重连，当前模式：<span id="current-mode-display">sse</span></div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-microchip"></i> 模型与接口（全局）</div>
+                    <div class="form-group">
+                        <label for="provider-api-base">API 地址</label>
+                        <input type="text" id="provider-api-base" placeholder="https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/deepseek">
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-model">默认模型</label>
+                        <input type="text" id="provider-model" placeholder="deepseek-flash">
+                        <span class="settings-hint">支持 deepseek-flash（快速）、deepseek-reasoner（思考）或任意兼容接口的模型名</span>
+                    </div>
+                    <div class="settings-hint"><i class="fas fa-shield-halved"></i> 系统默认 Key 只保存在服务端；也可以在下方「我的 API Key」保存自己的 Key（加密存储、优先使用）。</div>
+                    <button id="save-provider" class="btn-accent block">保存模型设置</button>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-key"></i> 我的 API Key</div>
+                    <div class="form-group">
+                        <label for="user-api-key">私有 API Key（保存后优先于系统 Key）</label>
+                        <div class="password-container">
+                            <input type="password" id="user-api-key" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                            <button class="toggle-password" type="button" title="显示/隐藏">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <span class="settings-hint" id="user-api-key-status">正在检查配置状态…</span>
+                    </div>
+                    <div class="form-actions">
+                        <button id="save-user-api-key" class="btn-accent"><i class="fas fa-save"></i> 保存 Key</button>
+                        <button id="delete-user-api-key" class="btn-danger"><i class="fas fa-trash-can"></i> 删除 Key</button>
+                    </div>
+                    <div class="settings-hint" style="text-align:left;margin-top:8px;">
+                        <i class="fas fa-shield-halved"></i> Key 只以 AES-GCM 密文保存在服务端，保存后不会回显；若管理员关闭了该功能，将统一使用系统 Key。
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-clipboard-list"></i> 我的登录日志</div>
+                    <div class="settings-hint" style="text-align:left;">最近 20 次登录记录（时间 / 结果 / 来源 IP）。</div>
+                    <button id="load-login-logs" class="btn-secondary" style="width:100%;margin-top:10px;">
+                        <i class="fas fa-history"></i> 查看登录日志
+                    </button>
+                    <div id="login-logs-list" class="login-logs-list" style="display:none;"></div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-user-gear"></i> 关于我自己（用户偏好）</div>
+                    <div class="form-group">
+                        <textarea id="user-preference" rows="4" placeholder="例如：我是大学老师，性格有点内向，喜欢猫和下雨天，不喜欢太吵闹的场合"></textarea>
+                        <span class="settings-hint">注入系统提示词的【关于用户】，让 AI 更了解你（限 1000 字）</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-safeword">安全词</label>
+                        <input type="text" id="user-safeword" placeholder="例如：暂停">
+                        <span class="settings-hint">消息中出现该词时，立即中止角色扮演，AI 改用冷静中性语气回应（限 200 字）</span>
+                    </div>
+                    <button id="save-user-prefs" class="btn-accent block"><i class="fas fa-save"></i> 保存个性化设置</button>
+                </div>
+                <!-- 关于项目：版本号 + 更新日志入口（版本号由 window.APP_VERSION 填充） -->
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-circle-info"></i> 关于项目</div>
+                    <div class="settings-hint" style="text-align:left;">当前版本：<span data-app-version>v0.14.4</span></div>
+                    <button type="button" id="openChangelogBtn" class="btn-secondary" style="width:100%;margin-top:10px;">
+                        <i class="fas fa-book"></i> 查看更新日志
+                    </button>
+                    <a class="btn-secondary" href="https://bypc.us.ci/docs/" target="_blank" rel="noopener" style="width:100%;margin-top:8px;">
+                        <i class="fas fa-book-open"></i> 使用手册
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 设置（点击聊天中的 AI 头像打开；模型为全局，AI 参数仅对当前 AI 生效） -->
+    <div id="ai-settings-modal" class="modal">
+        <div class="modal-content ai-settings-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-robot"></i> <span id="ai-settings-title">AI 设置</span></h2>
+                <button id="close-ai-settings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-avatar" id="ai-settings-avatar-preview"><i class="fas fa-robot"></i></div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-microchip"></i> 模型（全局）</div>
+                    <div class="settings-options model-options">
+                        <button class="settings-option-btn" data-model="deepseek-flash">快速</button>
+                        <!-- <button class="settings-option-btn" data-model="deepseek-reasoner">思考</button> -->
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                        <label for="ai-settings-model">自定义模型</label>
+                        <input type="text" id="ai-settings-model" placeholder="deepseek-flash / 其他模型名">
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-title"><i class="fas fa-sliders-h"></i> AI 参数（仅当前 AI）</div>
+                    <div class="form-group">
+                        <label>头像路径（如 images/a.png，与个人头像一致）</label>
+                        <input type="text" id="ai-settings-avatar" placeholder="images/a.png">
+                        <span class="avatar-size-hint"><i class="fas fa-expand"></i>支持正方形或长方形图片，将完整显示不裁剪（建议 256×256 或 512×384）</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>温度 (Temperature)</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-temp-display">0.70</span>
+                                <button type="button" class="param-info-btn" data-param="temperature" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-temp" min="0" max="2" step="0.05" value="0.7">
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>Top P</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-topp-display">0.90</span>
+                                <button type="button" class="param-info-btn" data-param="top_p" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-topp" min="0" max="1" step="0.05" value="0.9">
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>Max Tokens</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-max-tokens-display">2048</span>
+                                <button type="button" class="param-info-btn" data-param="max_tokens" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-max-tokens" min="256" max="8192" step="128" value="2048">
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>频率惩罚 (Frequency Penalty)</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-freq-penalty-display">0.0</span>
+                                <button type="button" class="param-info-btn" data-param="frequency_penalty" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-freq-penalty" min="-2" max="2" step="0.1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>存在惩罚 (Presence Penalty)</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-pres-penalty-display">0.0</span>
+                                <button type="button" class="param-info-btn" data-param="presence_penalty" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-pres-penalty" min="-2" max="2" step="0.1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>记忆窗口 (Memory Window)</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-memory-window-display">30</span>
+                                <button type="button" class="param-info-btn" data-param="memory_window" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-memory-window" min="10" max="100" step="5" value="30">
+                        <span class="avatar-size-hint"><i class="fas fa-brain"></i>每攒够 N 条消息自动提炼一条长期记忆</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="param-label">
+                            <span>上下文长度 (Context Window)</span>
+                            <span class="param-controls">
+                                <span class="param-value" id="ai-context-window-display">20</span>
+                                <button type="button" class="param-info-btn" data-param="context_window" title="参数详情"><i class="fas fa-circle-info"></i></button>
+                            </span>
+                        </label>
+                        <input type="range" id="ai-context-window" min="5" max="100" step="5" value="20">
+                        <span class="avatar-size-hint"><i class="fas fa-comments"></i>每次发送给 AI 的最近聊天消息条数</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button id="save-ai-settings" class="btn-accent"><i class="fas fa-save"></i> 保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索聊天记录（第 20 项） -->
+    <div id="search-modal" class="modal">
+        <div class="modal-content search-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-magnifying-glass"></i> 搜索聊天记录</h2>
+                <button id="close-search" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" id="search-input" placeholder="输入关键词后回车搜索" autocomplete="off">
+                </div>
+                <div id="search-results" class="search-results">
+                    <div class="commitments-empty">输入关键词开始搜索</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的收藏（第 23 项） -->
+    <div id="favorites-modal" class="modal">
+        <div class="modal-content favorites-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-star"></i> 我的收藏</h2>
+                <button id="close-favorites" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="favorites-list" class="favorites-list">
+                    <div class="commitments-empty">暂无收藏（右键消息 → 收藏）</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑历史（第 25 项） -->
+    <div id="edits-modal" class="modal">
+        <div class="modal-content edits-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clock-rotate-left"></i> 编辑历史</h2>
+                <button id="close-edits" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="edits-list" class="edits-list">
+                    <div class="commitments-empty">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表情回应选择器（第 24 项，动态定位） -->
+    <div id="reaction-picker" class="reaction-picker" style="display:none"></div>
+
+    <!-- AI 答应你的事（承诺/待办，第 18 项） -->
+    <div id="commitments-modal" class="modal">
+        <div class="modal-content commitments-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-handshake"></i> AI 答应你的事</h2>
+                <button id="close-commitments" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-hint">AI 在对话中明确答应过的事会自动记录在这里；勾选表示已完成，未完成的会持续提醒角色。</p>
+                <div id="commitments-list" class="commitments-list">
+                    <div class="commitments-empty">暂无记录</div>
+                </div>
+                <div class="form-actions">
+                    <button id="add-commitment" class="btn-secondary"><i class="fas fa-plus"></i> 手动添加</button>
+                    <button id="commitments-refresh" class="btn-accent"><i class="fas fa-rotate"></i> 刷新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除聊天记录（勾选即删除该条及更晚的所有消息） -->
+    <div id="clear-history-modal" class="modal">
+        <div class="modal-content clear-history-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-trash-can"></i> 删除聊天记录</h2>
+                <button id="close-clear-history" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="clear-history-hint">
+                    勾选一条消息后，<b>比它更晚的所有消息也会被一并勾选</b>；删除不可恢复。
+                </p>
+                <div class="clear-history-toolbar">
+                    <label class="clear-history-select-all">
+                        <input type="checkbox" id="clear-history-all"> 全选
+                    </label>
+                    <span id="clear-history-count">已选 0 条</span>
+                </div>
+                <div id="clear-history-list" class="clear-history-list">
+                    <!-- 消息列表动态生成 -->
+                </div>
+                <div class="form-actions">
+                    <button class="btn-secondary" id="cancel-clear-history">取消</button>
+                    <button class="btn-danger" id="confirm-clear-history">
+                        <i class="fas fa-trash-can"></i> 删除所选
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 移动端「更多」面板：聊天操作收纳（0.14.4） ===== -->
+    <div id="chatMorePanel" class="more-panel" role="dialog" aria-modal="true"
+         aria-labelledby="chatMorePanelTitle" aria-hidden="true">
+        <div class="more-panel-card">
+            <div class="more-panel-head">
+                <span class="more-panel-title" id="chatMorePanelTitle"><i class="fas fa-ellipsis"></i> 更多操作</span>
+                <button type="button" class="more-panel-close" data-more-close aria-label="关闭">&times;</button>
+            </div>
+            <div class="more-panel-grid">
+                <button type="button" class="more-item" data-more-target="#replayBtn">
+                    <i class="fas fa-clock-rotate-left"></i><span>时光机</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#favoritesBtn">
+                    <i class="fas fa-star"></i><span>我的收藏</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#exportBtn">
+                    <i class="fas fa-file-export"></i><span>导出对话</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#commitmentsBtn">
+                    <i class="fas fa-handshake"></i><span>AI 承诺</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#chatAiSettingsBtn">
+                    <i class="fas fa-sliders"></i><span>AI 设置</span>
+                </button>
+                <button type="button" class="more-item more-item-danger" data-more-target="#clearHistoryBtn">
+                    <i class="fas fa-trash-can"></i><span>清空记录</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 移动端「更多」面板：账号操作收纳（0.14.4） ===== -->
+    <div id="userMorePanel" class="more-panel" role="dialog" aria-modal="true"
+         aria-labelledby="userMorePanelTitle" aria-hidden="true">
+        <div class="more-panel-card">
+            <div class="more-panel-head">
+                <span class="more-panel-title" id="userMorePanelTitle"><i class="fas fa-user-gear"></i> 更多账号操作</span>
+                <button type="button" class="more-panel-close" data-more-close aria-label="关闭">&times;</button>
+            </div>
+            <div class="more-panel-grid">
+                <button type="button" class="more-item" data-more-target="#enhPaletteBtn">
+                    <i class="fas fa-wand-magic-sparkles"></i><span>命令面板</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#rolesLink">
+                    <i class="fas fa-cogs"></i><span>管理后台</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#adminLink">
+                    <i class="fas fa-user-shield"></i><span>系统管理</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#syncBtn">
+                    <i class="fas fa-cloud-download-alt"></i><span>同步数据</span>
+                </button>
+                <button type="button" class="more-item" data-more-target="#profile-btn">
+                    <i class="fas fa-user"></i><span>个人资料</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义右键 / 长按菜单 -->
+    <div id="context-menu" class="context-menu" style="display:none"></div>
+
+    <!-- marked.js - Markdown 解析库（defer：不阻塞首屏解析，登录后渲染消息时早已就绪） -->
+    <!-- script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script-->
+    <script src="js/marked.min.js"></script>
+    <script src="js/purify.min.js"></script>
+    <script src="js/modal.js"></script>
+    <script src="js/param-info.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/turnstile.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/theme.js"></script>
+    <!-- 版本号唯一来源（0.11.0 起独立成文件；必须早于 features.js） -->
+    <script src="js/version.js"></script>
+    <!-- features.js 必须先于 app.js 加载：app.js 的 initApp 会调用其中的 init* 函数 -->
+    <script src="js/features.js"></script>
+    <script src="js/app.js"></script>
+    <!-- 0.10.0 增强包：必须在 app.js 之后（需要包装 app.js 的渲染函数） -->
+    <script src="js/enhance.js"></script>
+    <!-- 0.13.0 好玩扩展：时光机回放 + 分享卡片（只在聊天页加载） -->
+    <script src="js/enhance-cinema.js"></script>
+</body>
+</html>

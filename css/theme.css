@@ -1,0 +1,230 @@
+/* ========================================
+   theme.css — 设计令牌层（Design Tokens）
+   只允许出现 CSS 变量；所有具体规则在 base.css / components.css / chat.css / 页面 CSS。
+   加载顺序：theme.css → base.css → components.css → chat.css / 页面 CSS
+   ======================================== */
+
+:root {
+  /* 主色（黑白灰） */
+  --primary: #333333;
+  --primary-hover: #111111;
+  --primary-gradient: linear-gradient(135deg, #4a4a4a 0%, #262626 100%);
+  --primary-light: #8a8a8a;
+  --primary-dark: #111111;
+  --accent: #333333;
+  --accent-text: #ffffff;
+  --accent-gold: #9a9a9a;
+
+  /* 亮主题 */
+  --bg: #f2f2f2;
+  --bg-gradient: linear-gradient(135deg, #f7f7f7 0%, #eeeeee 100%);
+  --container-bg: rgba(255, 255, 255, 0.92);
+  --card-bg: #ffffff;
+  --sidebar-bg: #fafafa;
+  --chat-bg: #f2f2f2;
+  --border-color: rgba(0, 0, 0, 0.10);
+  --text-primary: #1c1c1c;
+  --text-secondary: #8b8b8b;
+  --text-tertiary: #b5b5b5;
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.10);
+  --bubble-received: #ffffff;
+  --bubble-sent: #262626;
+  --bubble-sent-text: #ffffff;
+  --msg-time-color: #9a9a9a;
+
+  /* 通用属性 */
+  --backdrop-blur: blur(16px);
+  --border-radius-sm: 10px;
+  --border-radius-md: 14px;
+  --border-radius-lg: 18px;
+  --border-radius-xl: 22px;
+
+  /* 动画时长 */
+  --transition-fast: 0.2s ease-out;
+  --transition-base: 0.3s ease-out;
+  --transition-slow: 0.45s ease-out;
+
+  /* 纯色聊天背景（取消彩色网格纹理） */
+  --grid-pattern: none;
+
+  /* 语义色 / 基础色：原 theme.css 组件里散落的固定色，统一收口到这里 */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --danger: #c0392b;
+  --danger-light: #e57373;
+  --danger-hover: #a93226;
+  --danger-light-hover: #f08b8b;
+  --info: #2563eb;
+  --info-light: #60a5fa;
+}
+
+/* ---------- 暗主题·高级深灰（分层黑 + 精致阴影） ----------
+   注意：主题/配色令牌一律锁定在 html[data-theme] / html[data-accent] 上。
+   任何带 data-theme="dark" 的普通控件（例如主题切换按钮
+   <button class="settings-option-btn" data-theme="dark">）因此不会再继承暗色令牌，
+   从根源上避免“属性选择器污染控件自身样式”的问题。
+   唯一例外是 .accent-tile 配色预览卡：它靠自身的 data-accent / data-theme
+   在卡片内部生效来预览各套配色（见 static/js/studio.js），故显式保留。 */
+html[data-theme="dark"] {
+  --primary: #ececec;
+  --primary-hover: #ffffff;
+  --primary-gradient: linear-gradient(135deg, #ececec 0%, #c4c4c4 100%);
+  --primary-light: #6e6e6e;
+  --primary-dark: #e0e0e0;
+  --accent: #ececec;
+  --accent-text: #111111;
+  --accent-gold: #6f6f6f;
+
+  --bg: #0b0b0b;
+  --bg-gradient: linear-gradient(135deg, #101010 0%, #0a0a0a 100%);
+  --container-bg: rgba(12, 12, 12, 0.96);
+  --card-bg: #181818;
+  --sidebar-bg: #131313;
+  --chat-bg: #0b0b0b;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-primary: #f2f2f2;
+  --text-secondary: #9a9a9a;
+  --text-tertiary: #5c5c5c;
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.045);
+  --shadow-sm: 0 1px 6px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.72);
+  --bubble-received: #1f1f1f;
+  --bubble-sent: #e9e9e9;
+  --bubble-sent-text: #101010;
+  --msg-time-color: #5a5a5a;
+}
+
+/* ============================================================
+   增强包主题令牌（原 enhance.css 的配色/字号变量）
+   配色块选择器同样只作用于 html 根节点（.accent-tile 例外，用于配色预览卡）
+   ============================================================ */
+
+:root {
+  --enh-accent: #333333;
+  --enh-accent-soft: rgba(0, 0, 0, 0.08);
+  --enh-msg-font: 0.95rem;
+  --enh-msg-line: 1.6;
+  --enh-msg-gap: 2px;
+  --enh-msg-pad-y: 9px;
+  --enh-msg-pad-x: 13px;
+  --enh-msg-time-gap: 14px;
+}
+
+html[data-accent="sakura"],
+.accent-tile[data-accent="sakura"] {
+  /* 深色：按钮 / 渐变标题 / 强调文字（纯白字对比 4.8~7.2） */
+  --primary-gradient: linear-gradient(135deg, #d23066 0%, #a1234d 100%);
+  --primary-hover: #881e41;
+  --accent-text: #ffffff;
+  /* 浅色：我发出的气泡（深墨字对比 8~10） */
+  --bubble-sent: linear-gradient(135deg, #ebc4d1 0%, #e4adbf 100%);
+  --bubble-sent-text: #3b1623;
+  --enh-accent: #be3764;
+  --enh-accent-soft: rgba(190, 55, 100, 0.14);
+}
+
+html[data-theme="dark"][data-accent="sakura"],
+.accent-tile[data-theme="dark"][data-accent="sakura"] {
+  --primary-gradient: linear-gradient(135deg, #f4aec6 0%, #dd86a6 100%);
+  --primary-hover: #f8c3d5;
+  --accent-text: #2b1019;
+  --bubble-sent: linear-gradient(135deg, #f4aec6 0%, #dd86a6 100%);
+  --bubble-sent-text: #2b1019;
+  --enh-accent: #eba2bd;
+  --enh-accent-soft: rgba(235, 162, 189, 0.18);
+}
+
+html[data-accent="ocean"],
+.accent-tile[data-accent="ocean"] {
+  --primary-gradient: linear-gradient(135deg, #2d71cb 0%, #22569b 100%);
+  --primary-hover: #1c4882;
+  --accent-text: #ffffff;
+  --bubble-sent: linear-gradient(135deg, #bccfe9 0%, #a5bfe1 100%);
+  --bubble-sent-text: #16263b;
+  --enh-accent: #346cb4;
+  --enh-accent-soft: rgba(52, 108, 180, 0.14);
+}
+
+html[data-theme="dark"][data-accent="ocean"],
+.accent-tile[data-theme="dark"][data-accent="ocean"] {
+  --primary-gradient: linear-gradient(135deg, #93bff0 0%, #5f93dd 100%);
+  --primary-hover: #a8ccf5;
+  --accent-text: #0d1c2e;
+  --bubble-sent: linear-gradient(135deg, #93bff0 0%, #5f93dd 100%);
+  --bubble-sent-text: #0d1c2e;
+  --enh-accent: #8fbcf0;
+  --enh-accent-soft: rgba(143, 188, 240, 0.18);
+}
+
+html[data-accent="forest"],
+.accent-tile[data-accent="forest"] {
+  --primary-gradient: linear-gradient(135deg, #1c8252 0%, #16623e 100%);
+  --primary-hover: #125234;
+  --accent-text: #ffffff;
+  --bubble-sent: linear-gradient(135deg, #96dcbb 0%, #7fd4ac 100%);
+  --bubble-sent-text: #163b2a;
+  --enh-accent: #237951;
+  --enh-accent-soft: rgba(35, 121, 81, 0.14);
+}
+
+html[data-theme="dark"][data-accent="forest"],
+.accent-tile[data-theme="dark"][data-accent="forest"] {
+  --primary-gradient: linear-gradient(135deg, #9bdcb6 0%, #62ad86 100%);
+  --primary-hover: #b0e6c6;
+  --accent-text: #0c1f16;
+  --bubble-sent: linear-gradient(135deg, #9bdcb6 0%, #62ad86 100%);
+  --bubble-sent-text: #0c1f16;
+  --enh-accent: #98d9b3;
+  --enh-accent-soft: rgba(152, 217, 179, 0.18);
+}
+
+html[data-accent="sunset"],
+.accent-tile[data-accent="sunset"] {
+  --primary-gradient: linear-gradient(135deg, #a36324 0%, #7b4b1b 100%);
+  --primary-hover: #663e16;
+  --accent-text: #ffffff;
+  --bubble-sent: linear-gradient(135deg, #e4c9af 0%, #ddba98 100%);
+  --bubble-sent-text: #3b2916;
+  --enh-accent: #94602b;
+  --enh-accent-soft: rgba(148, 96, 43, 0.14);
+}
+
+html[data-theme="dark"][data-accent="sunset"],
+.accent-tile[data-theme="dark"][data-accent="sunset"] {
+  --primary-gradient: linear-gradient(135deg, #f5c48d 0%, #e09a58 100%);
+  --primary-hover: #f8d2a4;
+  --accent-text: #2a1a0b;
+  --bubble-sent: linear-gradient(135deg, #f5c48d 0%, #e09a58 100%);
+  --bubble-sent-text: #2a1a0b;
+  --enh-accent: #f2bc83;
+  --enh-accent-soft: rgba(242, 188, 131, 0.18);
+}
+
+html[data-accent="violet"],
+.accent-tile[data-accent="violet"] {
+  --primary-gradient: linear-gradient(135deg, #8954d9 0%, #6d2dcd 100%);
+  --primary-hover: #5b26ab;
+  --accent-text: #ffffff;
+  --bubble-sent: linear-gradient(135deg, #d6c8ed 0%, #c5b1e5 100%);
+  --bubble-sent-text: #25163b;
+  --enh-accent: #814fcc;
+  --enh-accent-soft: rgba(129, 79, 204, 0.14);
+}
+
+html[data-theme="dark"][data-accent="violet"],
+.accent-tile[data-theme="dark"][data-accent="violet"] {
+  --primary-gradient: linear-gradient(135deg, #cbb8f5 0%, #9b80e4 100%);
+  --primary-hover: #d8c9f8;
+  --accent-text: #1c1230;
+  --bubble-sent: linear-gradient(135deg, #cbb8f5 0%, #9b80e4 100%);
+  --bubble-sent-text: #1c1230;
+  --enh-accent: #c3adf2;
+  --enh-accent-soft: rgba(195, 173, 242, 0.18);
+}

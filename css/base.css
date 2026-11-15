@@ -1,0 +1,1295 @@
+/* ============================================================
+   base.css — 基础底座层
+   全局 reset / body 排版 / 滚动条 / 全局动画 / 明暗切换过渡
+   以及登录页与角色/管理页的遗留专属规则（非通用组件、非聊天）。
+   加载顺序：theme.css → base.css → components.css → 页面 CSS
+   ============================================================ */
+
+/* 全局平滑过渡 */
+*,
+*::before,
+*::after {
+  transition: background-color var(--transition-slow),
+              border-color var(--transition-base),
+              color var(--transition-base),
+              box-shadow var(--transition-base),
+              transform var(--transition-fast),
+              backdrop-filter var(--transition-base);
+  box-sizing: border-box;
+}
+
+/* ---------- 全局基础 ---------- */
+body {
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  margin: 0;
+  min-height: 90vh;
+  position: relative;
+  animation: flowBg 20s ease infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes flowBg {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+/* ---------- 认证容器 & 聊天容器 ---------- */
+.auth-container {
+  transition: background-color var(--transition-base),
+              border-color var(--transition-base),
+              color var(--transition-base),
+              box-shadow var(--transition-base),
+              opacity var(--transition-base),
+              transform var(--transition-base);
+}
+
+.auth-container {
+  padding: 2rem;
+}
+
+
+/* ========== 登录页面专用样式 (修复居中与错位) ========== */
+.auth-page {
+  text-align: center;
+  width: 100%;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.auth-content {
+  max-width: 340px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-content .form-group {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.auth-content .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.auth-content .form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+  outline: none;
+}
+
+
+.auth-content .btn-primary {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 12px 0;
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  cursor: pointer;
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.auth-content .btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.auth-content .btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* 确保输入框容器不溢出 */
+.auth-content .form-group,
+.auth-content input,
+.auth-content button {
+  box-sizing: border-box;
+}
+
+/* ---------- 头部区域 ---------- */
+
+/* ---------- 消息区域 (网格纹理) ---------- */
+
+/* 消息容器 & 气泡通用 */
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 发送消息 (右侧) */
+
+/* 接收消息 (左侧) */
+
+/* 消息悬停效果 */
+
+/* 系统消息 */
+
+/* ---------- 输入区域 ---------- */
+
+/* ---------- 状态栏 ---------- */
+
+/* ---------- 模式选择器 (右下角浮动) ---------- */
+
+/* ---------- 主题切换器 (右上角) ---------- */
+
+/* ---------- 模态框玻璃重设计 ---------- */
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- 额外按钮&加载动画 ---------- */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 三个跳动的点 (用于加载指示) */
+@keyframes dotPulse {
+  0%, 60%, 100% { transform: scale(0.6); opacity: 0.4; }
+  30% { transform: scale(1.2); opacity: 1; }
+}
+
+/* ---------- 移动端适配 ---------- */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1.5rem;
+}
+  .auth-content {
+    max-width: 100%;
+  }
+}
+
+/* ========= 统一设置面板（拟态玻璃风格） ========= */
+
+/* 调整原有模态框关闭按钮不影响新面板 */
+
+
+
+
+
+/* 动态生成的spinner容器 */
+
+/* 加载遮罩（覆盖整个聊天区域） */
+
+/* 按钮禁用样式 */
+
+/* ========== 布局修复：侧边栏 + 主区域 ========== */
+
+/* 消息区域占满剩余空间 */
+
+/* 输入区域调整 */
+
+/* 状态栏 */
+
+/* ========== 侧边栏收缩功能 ========== */
+
+/* ===== 侧边栏收起按钮（展开时显示） ===== */
+
+/* ===== 展开按钮（侧边栏收起时显示） ===== */
+
+/* ========================================
+   移动端适配（聊天界面）
+   ======================================== */
+@media (max-width: 768px) {
+    /* 聊天容器占满屏幕 */
+
+    /* 侧边栏改为全屏遮罩 */
+
+    /* 展开按钮在移动端始终显示（如果侧边栏收起） */
+
+    /* 移动端遮罩 */
+
+    /* 主区域占满 */
+
+    /* 消息气泡宽度 */
+
+    /* 输入区域 */
+
+    /* 头部 */
+
+    /* 状态栏 */
+}
+
+/* ========================================
+   Markdown 渲染样式
+   ======================================== */
+
+/* 暗色主题适配 */
+
+/* ========== AI 消息操作（继续 / 编辑） ========== */
+
+/* ============================================================
+   新版：黑白灰 · 微信式消息排版（覆盖旧玻璃科技风）
+   ============================================================ */
+
+/* ---------- 字体排版（重点） ---------- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+        'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* ---------- 明暗切换丝滑过渡 ---------- */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+    transition: background-color 0.4s ease, color 0.4s ease,
+        border-color 0.4s ease, fill 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+/* ---------- 容器：全屏微信式 ---------- */
+.auth-container {
+    backdrop-filter: none;
+    background: var(--bg-gradient);
+    border: none;
+    box-shadow: none;
+}
+
+/* ---------- 顶部栏 ---------- */
+
+/* ---------- 聊天头部（联系人名） ---------- */
+
+/* ---------- 消息区域：纯色微信背景 ---------- */
+
+/* ========== 微信式消息排版 ========== */
+@keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 时间标签：居中显示在气泡上方（格式 XXXX年XX月XX日 XX:XX） */
+
+/* 一行：头像 + 气泡 */
+
+/* 头像（微信圆角方块） */
+
+/* 气泡 */
+
+/* 气泡内文本（覆盖旧样式） */
+
+/* 系统消息：居中灰色小胶囊 */
+
+/* AI 流式指示：低调呼吸点 */
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 1; }
+}
+
+/* AI 操作按钮（继续/编辑）：低调灰 */
+
+/* Markdown 排版（微信风格、克制动线） */
+
+/* ---------- 侧边栏（联系人） ---------- */
+
+/* ---------- 输入区 ---------- */
+
+/* ---------- 按钮（黑白灰） ---------- */
+
+/* ---------- 模态框 ---------- */
+
+/* ---------- 状态栏 / 设置 ---------- */
+
+/* ---------- Toast（低调中性） ---------- */
+
+/* ---------- 加载动画 / 滚动条 ---------- */
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* ---------- 管理后台遗留样式已迁移到 AGM.css / roles.css ---------- */
+
+/* ---------- 移动端适配 ---------- */
+
+/* 桌面端：更宽松的阅读宽度 */
+
+/* ============================================================
+   修复段：编辑框 / 设置按钮对比度 / 暗色高级感 / 移动端
+   ============================================================ */
+
+/* ---------- 编辑框（放大 + 防止文字溢出气泡） ---------- */
+
+
+/* ---------- 暗色高级感微调 ---------- */
+[data-theme="dark"] .card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- 容器高度：动态视口（解决移动端输入区被浏览器栏遮挡） ---------- */
+.auth-container {
+}
+
+/* ---------- 输入区：确保发送按钮与输入框完整显示 ---------- */
+
+/* ---------- 移动端：联系人抽屉 + 汉堡按钮 ---------- */
+
+@media (max-width: 768px) {
+    /* 侧栏抽屉：默认收起，active 展开 */
+    /* 遮罩 */
+}
+
+/* ============================================================
+   第三轮修复：主题按钮选中态 / 版本切换 / 用户消息操作栏
+   ============================================================ */
+
+
+/* 版本切换：隐藏旧版本 + 气泡右下角切换按钮 */
+
+/* 操作栏：AI 消息靠左（头像侧），我的消息靠右 */
+
+/* ============================================================
+   第四轮：加载页 / 跳到底部 / 右键菜单 / AI设置模态 / 铺满屏 / 主题按钮
+   ============================================================ */
+
+/* ---------- 加载页 ---------- */
+@keyframes splashPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.06); }
+}
+
+/* ---------- 聊天界面铺满屏幕 ---------- */
+.auth-container {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+}
+
+/* ---------- 快捷回到最新消息 ---------- */
+
+
+/* ---------- 右键 / 长按菜单 ---------- */
+@keyframes ctxIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- AI 设置模态 ---------- */
+
+/* 设置面板内表单 */
+/* 设置面板内多行输入（用户偏好等） */
+
+/* 联系人/气泡头像图片 */
+
+/* AI 头像可点击（打开设置） */
+
+/* 版本胶囊 <1/2> */
+
+/* ============================================================
+   第五轮修复：主题按钮显色 / 模态框高度 / 按钮尺寸统一
+   ============================================================ */
+
+
+
+/* ---------- 模态框：小于屏幕 + 内部滚动 ---------- */
+
+/* ---------- 按钮尺寸统一 ---------- */
+/* 链接型按钮：<a> 复用 .btn-secondary 的外观（「使用手册」等外链入口） */
+
+/* 「关于项目」区块与更新日志弹窗的入口按钮：悬停上浮 + 按压回弹（与 .btn-accent 的动画一致） */
+
+/* ---------- 聊天标题栏操作按钮 ---------- */
+
+/* ---------- 删除聊天记录模态框 ---------- */
+
+/* ============================================================
+   第六轮修复：按钮文字居中 / 尺寸统一 / 工具栏紧凑
+   ============================================================ */
+
+/* 主按钮文字居中（登录按钮等） */
+
+/* 模态框操作行按钮：大小一致、同一排 */
+
+/* 编辑角色模态框的操作行保持一行 */
+
+/* ============================================================
+   第九轮整理：危险按钮全局统一（红色系，与 roles.css 一致）
+   适用于删除聊天记录、删除联系人等所有确认类操作
+   ============================================================ */
+
+/* ============================================================
+   UI 整理：清除遗留的靛紫/彩色光晕，统一灰阶
+   ============================================================ */
+
+/* 输入框聚焦：灰阶描边与光晕（登录框 / 发送框 / 模态表单） */
+.auth-content .form-group input:focus {
+    border-color: var(--text-secondary);
+    box-shadow: 0 0 0 2px rgba(120, 120, 120, 0.22);
+    background: var(--card-bg);
+}
+[data-theme="dark"] .auth-content .form-group input:focus {
+    background: var(--card-bg);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14);
+}
+
+/* 主按钮悬停：中性阴影（覆盖旧的紫色阴影） */
+.auth-content .btn-primary:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+}
+[data-theme="dark"] .auth-content .btn-primary:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 编辑框聚焦：灰阶 */
+
+/* 顶栏「管理后台」链接图标：灰色、悬停浅底（原先无颜色，会显示浏览器默认蓝） */
+
+/* 密码眼睛按钮：灰阶图标 */
+
+/* ============================================================
+   第十轮优化：动画系统 + 新主按钮 .btn-accent
+   （.btn-primary 仅保留登录页使用；其余界面统一换用 .btn-accent）
+   ============================================================ */
+
+/* ---------- 新主按钮 .btn-accent（登录页以外的主操作按钮） ----------
+   与 .btn-primary 视觉一致，但不强制 width:100%；
+   在 .form-actions 中和取消按钮并排时自动各占 50%。 */
+
+/* 整行通栏主按钮（单个按钮撑满一行，如资料保存 / 模型设置保存） */
+
+/* 操作行（取消 + 确定/删除 并排）→ 两个按钮各占 50% */
+
+/* 键盘可访问性焦点环 */
+.action-btn:focus-visible {
+    outline: 2px solid var(--text-secondary);
+    outline-offset: 2px;
+}
+
+/* ---------- 模态框：淡入淡出 + 弹出（打开 / 关闭双向动画） ---------- */
+
+/* ---------- Toast（主应用）：底部滑入滑出 ---------- */
+
+/* ---------- 页面级入场动画 ---------- */
+@keyframes pageIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes chatIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* 登录页：容器 / 标题 / 表单 依次入场 */
+.auth-page {
+    animation: pageIn 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.12) backwards;
+}
+.auth-header h1 {
+    animation: fadeUp 0.45s 0.08s ease backwards;
+}
+.auth-header p {
+    animation: fadeUp 0.45s 0.16s ease backwards;
+}
+.auth-content .form-group {
+    animation: fadeUp 0.45s ease backwards;
+}
+.auth-content .form-group:nth-of-type(1) { animation-delay: 0.22s; }
+.auth-content .form-group:nth-of-type(2) { animation-delay: 0.3s; }
+.auth-content .btn-primary {
+    animation: fadeUp 0.45s 0.38s ease backwards;
+}
+
+/* 聊天界面切入 / 退出（登录 ↔ 退出切换时） */
+.auth-container.fade-out {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+/* ---------- 消息气泡：左右滑入（接收从左、发送从右） ---------- */
+@keyframes msgInLeft {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes msgInRight {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes msgFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* 发送失败：红框提示 + 重发行入场 */
+
+/* AI 就地编辑框入场 */
+
+/* ---------- 联系人列表：交错入场 + 选中指示条 ---------- */
+@keyframes contactIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes growBar {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+/* 交错延迟（最多 12 条，其余统一入场） */
+
+/* ---------- 聊天标题栏按钮（AI 设置 / 删除记录）浮现 ---------- */
+#chatAiSettingsBtn,
+#clearHistoryBtn {
+    animation: fadeIn 0.3s ease backwards;
+}
+
+/* ---------- 右键菜单：关闭动画 ---------- */
+@keyframes ctxOut {
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+/* ---------- 回到最新消息：点击弹跳 ---------- */
+@keyframes bounceDown {
+    0%   { transform: translateY(0); }
+    40%  { transform: translateY(5px); }
+    100% { transform: translateY(0); }
+}
+
+/* ---------- 全局按钮按压反馈（点击时轻微缩小） ---------- */
+/* 排除带定位位移的按钮（如侧栏展开钮 translateY(-50%)），避免按压时跳位 */
+
+/* ---------- 头像微交互 ---------- */
+
+/* ---------- 删除聊天记录行微交互（仅背景高亮，不做位移 → 避免点击抖动） ---------- */
+
+/* ---------- 移动端：操作行按钮纵向排列（确定在上） ---------- */
+
+/* ---------- 减少动态偏好：尊重系统设置，关闭动画 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================================
+   第十一轮优化：头像显示尺寸规范 + 模态框顶部头像 + 编辑框描边
+   （头像一律固定尺寸并 object-fit:cover 缩放，避免大图撑爆布局）
+   ============================================================ */
+
+/* ---------- 联系人列表头像：固定 36px，大图自动缩小居中裁剪 ---------- */
+
+/* ---------- 模态框顶部头像（个人资料 / AI 设置 / 编辑角色共用） ----------
+   宽度与拟态框一致，高度按图片比例自适应（动态调整，完整显示不裁剪） */
+
+/* 头像尺寸提示（置于输入框下方） */
+.avatar-size-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--text-tertiary);
+}
+.avatar-size-hint i {
+    margin-right: 4px;
+}
+
+/* ---------- 消息编辑框：中性灰描边（修复明暗主题下边框与背景反差） ---------- */
+/* 我发送的消息（气泡底色与主题相反）内编辑：编辑框背景跟随气泡，描边中性灰 */
+
+/* ============================================================
+   第十二轮优化：**文字** 不再加粗 → 蓝色高亮（AI 消息中的强调标记）
+   ============================================================ */
+
+/* ============================================================
+   第十三轮优化：AI 参数行布局 + 详情按钮 + 参数详情拟态框
+   ============================================================ */
+
+/* 参数行标题：左侧名称，右侧 数值 + 详情按钮 */
+.param-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.param-controls .param-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 详情按钮：右上角小圆钮 */
+.param-info-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.68rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+.param-info-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+    transform: scale(1.1);
+}
+.param-info-btn:active {
+    transform: scale(0.94);
+}
+
+/* 参数详情拟态框 */
+.param-info-modal {
+    max-width: 440px;
+    width: 92%;
+}
+.param-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+.param-info-row:last-of-type {
+    border-bottom: none;
+}
+.param-info-row .pi-label {
+    flex-shrink: 0;
+    min-width: 56px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    padding-top: 2px;
+}
+.param-info-row .pi-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+.param-info-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 8px 0 10px;
+}
+.param-info-desc {
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   第十四轮优化：导演词（/cmd 临时提示词）+ 记忆管理
+   ============================================================ */
+
+/* ---------- 输入区：导演词输入框 + 主输入框 ---------- */
+.input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+/* 主输入框改为可换行 textarea */
+#directorToggleBtn.active {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+#directorInput {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    padding: 2px 0;
+}
+#directorInput::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* ---------- 导演词气泡（聊天记录中的特别显示） ---------- */
+
+/* ---------- 记忆管理（编辑角色模态框） ---------- */
+.memory-manage {
+    margin-top: 2px;
+}
+.memory-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.memory-item {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--card-bg);
+    transition: box-shadow var(--transition-fast);
+}
+.memory-item:hover {
+    box-shadow: var(--shadow-sm);
+}
+.memory-item .memory-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+}
+/* 记忆的情绪标签（第 17 项） */
+.memory-emotion {
+    display: inline-block;
+    padding: 1px 7px;
+    margin: 0 2px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--hover-bg);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+}
+
+/* ---------- 承诺/待办列表（第 18 项，聊天页弹窗） ---------- */
+.commitment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    transition: box-shadow var(--transition-fast);
+}
+.commitment-item:hover {
+    box-shadow: var(--shadow-sm);
+}
+.commitment-item.done .commitment-content {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+}
+.commitment-item input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: var(--text-secondary);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.commitment-body {
+    flex: 1;
+    min-width: 0;
+}
+.commitment-content {
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+.commitment-time {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-top: 3px;
+}
+.commitment-del {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    transition: color var(--transition-fast);
+}
+.commitment-del:hover {
+    color: var(--danger);
+}
+.commitments-empty {
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 18px 0;
+}
+
+/* ============================================================
+   第十五轮：聊天交互增强（搜索 / 引用 / 收藏 / 表情 / 编辑历史）
+   ============================================================ */
+
+/* ---------- 输入框上方的引用条（第 21 项） ---------- */
+
+/* ---------- 气泡内的被引用消息缩略 ---------- */
+
+/* ---------- 已编辑标记 ---------- */
+
+/* ---------- 收藏星标 ---------- */
+
+/* ---------- 表情回应 ---------- */
+.reaction-picker {
+    position: fixed;
+    z-index: 10001;
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.15s ease both;
+}
+.reaction-opt {
+    background: transparent;
+    border: none;
+    font-size: 1.05rem;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 50%;
+    line-height: 1;
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+.reaction-opt:hover {
+    transform: scale(1.25);
+    background: var(--hover-bg);
+}
+.reaction-bar {
+    display: flex;
+    gap: 5px;
+    margin: 4px 0 0 46px;
+    flex-wrap: wrap;
+}
+.reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+}
+.reaction-chip:hover {
+    background: var(--card-bg);
+    border-color: var(--text-secondary);
+}
+
+/* ---------- 更新日志弹窗 ---------- */
+
+/* ---------- 搜索 / 收藏 / 编辑历史 弹窗 ---------- */
+.edits-modal-content {
+    max-width: 520px;
+    width: 92%;
+}
+.edits-list {
+    max-height: 56dvh;
+    overflow-y: auto;
+}
+.edit-version {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 8px;
+}
+.edit-version.current {
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
+}
+.edit-version-head {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-bottom: 5px;
+}
+.edit-version-text {
+    font-size: 0.84rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---------- 搜索定位高亮 ---------- */
+@keyframes msgHighlight {
+    0%, 100% { background: transparent; }
+    30% { background: rgba(224, 168, 0, 0.18); }
+}
+
+/* ============================================================
+   第十六轮：导出弹窗 + 归档区（第 26、29 项）
+   ============================================================ */
+.export-modal-content {
+    max-width: 460px;
+    width: 92%;
+}
+.export-modal-content input[type="date"] {
+    width: 100%;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+}
+.export-modal-content input[type="date"]:focus {
+    border-color: var(--text-secondary);
+}
+
+/* 归档行 / 归档标签 */
+.archived-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    background: var(--hover-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 999px;
+    padding: 2px 10px;
+}
+.archived-row td {
+    opacity: 0.85;
+}
+#archiveToggleBtn.active {
+    background: var(--hover-bg) !important;
+    border-color: var(--text-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ---------- Turnstile 组件容器（第 9 项） ---------- */
+.turnstile-slot {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+.turnstile-slot:empty {
+    display: none;
+    margin: 0;
+}
+.auth-content .turnstile-slot {
+    margin-bottom: 6px;
+}
+.memory-item .memory-content {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.memory-item textarea {
+    width: 100%;
+    min-height: 70px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+}
+.memory-item textarea:focus {
+    border-color: var(--text-secondary);
+}
+.memory-actions button {
+    margin-left: 6px;
+    padding: 2px 10px;
+    font-size: 0.72rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+}
+.memory-actions button:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+.memory-actions button.memory-del:hover {
+    color: var(--danger);
+    border-color: rgba(192, 57, 43, 0.4);
+    background: rgba(192, 57, 43, 0.06);
+}
+.memory-empty {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 12px 0;
+}
+
+/* ============================================================
+   最终覆盖段：设置/模式/主题按钮（.settings-option-btn）
+   —— 原文件里这组按钮有 25 处分散定义、5 个状态层层互相 !important 覆盖，
+      此处合并为一份：基态 / 非激活（亮·暗成对）/ 激活（亮·暗成对 + 无主题兜底）/
+      悬停 / 对勾。次序沿用合并前「各选择器最后一次出现」的顺序，视觉结果不变。
+   —— 注意：setTheme("system") 会移除 html[data-theme]，所以必须保留 :root 兜底，
+      否则选中态会退回旧的黑底白字。
+   ============================================================ */
+
+/* 悬停（!important 沿用合并前，避免被下面的亮色规则顶掉） */
+
+/* 激活态：无 data-theme（system 模式）时的兜底 */
+
+/* 非激活态：亮 / 暗 成对 */
+
+/* 亮主题下「暗色」选项的特殊着色（未选中时图标可读） */
+
+/* 激活态：亮 / 暗 成对（必须放在上面两条之后，靠特异性压过非激活规则） */
+
+/* ============================================================
+   减少动态偏好：优先级高于「主题切换过渡」
+   （html.theme-transition * 的 transition 与 * 的 transition-duration 同为 !important，
+     前者特异性更高，会把 0.01ms 顶掉；这里用同特异性 + 更靠后可覆写它）
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   版本号展示 / 更新日志（关于项目）
+   ============================================================ */
+
+/* 登录页底部版本号：低调、居中、悬浮高亮 */
+.auth-version {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+.auth-version:hover {
+  color: var(--text-secondary);
+}
+.auth-version-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.auth-version-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* 更新日志正文：复用 .markdown-body 的字号与节奏，颜色随主题自适应 */
+
+/* 历史版本折叠面板 */
+
+/* ============================================================
+   多用户安全架构 Phase 4：登录 / 注册选项卡 + 我的登录日志
+   ============================================================ */
+
+/* ---------- 登录页选项卡 ---------- */
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  max-width: 340px;
+  margin: 0 auto 18px;
+  padding: 4px;
+  background: var(--hover-bg);
+  border-radius: 30px;
+}
+
+.auth-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 8px 0;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              opacity var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.auth-tab:hover {
+  color: var(--text-primary);
+}
+
+.auth-tab.active {
+  background: var(--primary-gradient);
+  color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-panel {
+  display: none;
+}
+
+.auth-panel.active {
+  display: block;
+}
+
+/* ---------- 设置面板：我的登录日志 ---------- */
+.login-logs-list {
+  margin-top: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--card-bg);
+  padding: 4px 10px;
+}
+
+.login-log-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.8rem;
+}
+
+.login-log-item:last-child {
+  border-bottom: none;
+}
+
+.login-log-main {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.login-log-sub {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.login-log-time {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.login-log-ok { color: var(--success); font-weight: 600; }
+.login-log-fail { color: var(--error); font-weight: 600; }
+.login-log-block { color: var(--warning); font-weight: 600; }
+
+.login-log-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 14px 0;
+  font-size: 0.8rem;
+}

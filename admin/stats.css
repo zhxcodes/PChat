@@ -1,0 +1,62 @@
+/* static/admin/stats.css —— 统计页专属布局
+   公共外壳（导航 / 按钮 / 面板 / 统计栏）见 AGM.css；图表由 ECharts 6 绘制。 */
+
+.stats-days {
+    display: flex;
+    gap: 6px;
+}
+
+.stats-days .settings-option-btn {
+    padding: 5px 12px;
+    font-size: 0.76rem;
+}
+
+.stats-days .settings-option-btn.active::after {
+    content: '';
+    margin: 0;
+}
+
+.panel {
+    max-width: 1200px;
+    margin: 0 auto 16px;
+    animation: riseIn 0.4s ease backwards;
+}
+
+.panel > .panel-title {
+    margin-bottom: 12px;
+}
+
+.panel-row {
+    display: flex;
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto 16px;
+}
+
+.panel-row .panel {
+    flex: 1;
+    margin: 0;
+    min-width: 0;
+}
+
+.panel-empty {
+    padding: 22px 0;
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+/* ECharts 容器：高度由 HTML inline style 指定，宽度撑满面板 */
+#dailyChart,
+#emotionChart,
+#emotionDist,
+#hourlyHeat,
+#perContact {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .panel-row {
+        flex-direction: column;
+    }
+}

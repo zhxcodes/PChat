@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 · 统计</title>
+    <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            window.updateFavicon = function () {
+                var d = document.documentElement.getAttribute('data-theme');
+                var l = document.getElementById('app-favicon');
+                if (l) l.setAttribute('href', d === 'dark' ? '/favicon-dark.svg' : '/favicon.svg');
+            };
+            window.updateFavicon();
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="AGM.css">
+    <link rel="stylesheet" href="stats.css">
+</head>
+<body>
+
+    <!-- ===== 顶部导航 ===== -->
+    <header class="admin-header">
+        <div class="header-left">
+            <a href="roles.html" class="btn-icon" title="返回角色管理"><i class="fas fa-arrow-left"></i></a>
+            <h1><i class="fas fa-chart-line"></i> 数据统计</h1>
+        </div>
+        <div class="header-right">
+            <div class="stats-days">
+                <button class="settings-option-btn" data-days="7">近 7 天</button>
+                <button class="settings-option-btn active" data-days="30">近 30 天</button>
+                <button class="settings-option-btn" data-days="90">近 90 天</button>
+            </div>
+            <button id="themeToggleBtn" class="btn-icon" title="切换明暗主题"><i class="fas fa-moon"></i></button>
+            <button id="refreshBtn" class="btn-icon" title="刷新"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </header>
+
+    <!-- ===== 概览卡片 ===== -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-number" id="totalMessages">0</span>
+            <span class="stat-label">总消息数</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="totalDays">0</span>
+            <span class="stat-label">总对话天数</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="contactCount">0</span>
+            <span class="stat-label">有对话的角色</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="emotionCount">0</span>
+            <span class="stat-label">记忆条数(含情绪)</span>
+        </div>
+    </div>
+
+    <!-- ===== 每日消息量趋势 ===== -->
+    <section class="panel">
+        <div class="panel-title"><i class="fas fa-chart-column"></i> 每日消息量<span class="panel-hint" id="dailyRangeHint"></span></div>
+        <div id="dailyChart" style="height: 300px;"></div>
+    </section>
+
+    <!-- ===== 情绪趋势（第 30 项） ===== -->
+    <section class="panel">
+        <div class="panel-title"><i class="fas fa-face-smile"></i> 情绪趋势<span class="panel-hint">来自自动提取的记忆（按天聚合，UTC+8）</span></div>
+        <div id="emotionChart" style="height: 300px;"></div>
+    </section>
+
+    <div class="panel-row">
+        <!-- ===== 情绪分布 ===== -->
+        <section class="panel">
+            <div class="panel-title"><i class="fas fa-chart-pie"></i> 情绪分布</div>
+            <div id="emotionDist" style="height: 260px;"></div>
+        </section>
+
+        <!-- ===== 活跃时段热力图 ===== -->
+        <section class="panel">
+            <div class="panel-title"><i class="fas fa-clock"></i> 活跃时段（0-23 时）</div>
+            <div id="hourlyHeat" style="height: 320px;"></div>
+        </section>
+    </div>
+
+    <!-- ===== 每个联系人消息数量对比 ===== -->
+    <section class="panel">
+        <div class="panel-title"><i class="fas fa-users"></i> 各角色消息数量</div>
+        <div id="perContact" style="height: 300px;"></div>
+    </section>
+
+    <script src="/js/theme.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6/dist/echarts.min.js"></script>
+    <script src="stats.js"></script>
+</body>
+</html>
