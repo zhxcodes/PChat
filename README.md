@@ -26,6 +26,8 @@
 - **AI**通过 DeepSeek API 或任何兼容 OpenAI 格式的接口调用；
 - 可选绑定 Workers AI / Vectorize / Analytics Engine，分别用于心情标签、语义记忆检索与埋点。
 
+>可以在(https://bypc.us.ci/docs/)中了解更多
+
 ---
 
 ## ✨ 功能特性
