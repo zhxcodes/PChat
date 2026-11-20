@@ -46,6 +46,7 @@ export async function onRequestPost({ request, env, data }) {
       contact_id,
       display_name,
       contact_type,
+      avatar,
       temperature,
       top_p,
       max_tokens,
@@ -67,6 +68,7 @@ export async function onRequestPost({ request, env, data }) {
     // 输入校验
     if (checkLength('contact_id', contact_id, LIMITS.contact_id) ||
         checkLength('display_name', display_name, LIMITS.display_name) ||
+        checkLength('avatar', avatar, LIMITS.avatar) ||
         checkLength('greeting', greeting, LIMITS.greeting) ||
         checkLength('format', format, LIMITS.format) ||
         checkLength('prompt', prompt, LIMITS.prompt) ||
@@ -89,6 +91,7 @@ export async function onRequestPost({ request, env, data }) {
     const presPenaltyVal = clamp(presence_penalty, -2, 2, 0);
     const memWindowVal = Math.round(clamp(memory_window, MEMORY_WINDOW_MIN, MEMORY_WINDOW_MAX, MEMORY_WINDOW_DEFAULT));
     const ctxWindowVal = Math.round(clamp(context_window, CONTEXT_WINDOW_MIN, CONTEXT_WINDOW_MAX, CONTEXT_WINDOW_DEFAULT));
+    const avatarVal = (avatar === undefined || avatar === null) ? null : (String(avatar).trim().slice(0, LIMITS.avatar) || null);
 
     const existing = await env.DB.prepare(
       'SELECT id FROM contacts WHERE user_id = ? AND contact_id = ?'
@@ -98,23 +101,24 @@ export async function onRequestPost({ request, env, data }) {
     }
 
     const result = await env.DB.prepare(
-      `INSERT INTO contacts (user_id, contact_id, contact_type, display_name, temperature, top_p, max_tokens, frequency_penalty, presence_penalty, memory_window, context_window)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
-    ).bind(userId, cid, type, name, tempVal, topPVal, maxTokensVal, freqPenaltyVal, presPenaltyVal, memWindowVal, ctxWindowVal).first();
+      `INSERT INTO contacts (user_id, contact_id, contact_type, display_name, avatar, temperature, top_p, max_tokens, frequency_penalty, presence_penalty, memory_window, context_window)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
+    ).bind(userId, cid, type, name, avatarVal, tempVal, topPVal, maxTokensVal, freqPenaltyVal, presPenaltyVal, memWindowVal, ctxWindowVal).first();
 
-    // AI 角色：把角色设定同步写入 KV
+    // AI 角色：把角色设定同步写入 KV（键名必须带 userId，避免不同用户的同名 contact_id 互相覆盖）
     if (type === 'ai') {
-      if (greeting !== undefined || format !== undefined || scene !== undefined || appearance !== undefined || name) {
+      if (greeting !== undefined || format !== undefined || scene !== undefined || appearance !== undefined || avatar !== undefined || name) {
         const meta = {};
         if (name) meta.name = name;
+        if (avatarVal) meta.avatar = avatarVal;
         if (greeting !== undefined) meta.greeting = String(greeting).slice(0, LIMITS.greeting);
         if (format !== undefined) meta.format = String(format).slice(0, LIMITS.format);
         if (scene !== undefined) meta.scene = String(scene).slice(0, LIMITS.scene);
         if (appearance !== undefined) meta.appearance = String(appearance).slice(0, LIMITS.appearance);
-        await env.PROMPTS_KV.put(`meta_${cid}`, JSON.stringify(meta));
+        await env.PROMPTS_KV.put(`meta_${userId}_${cid}`, JSON.stringify(meta));
       }
       if (prompt !== undefined) {
-        await env.PROMPTS_KV.put(`prompt_${cid}`, String(prompt).slice(0, LIMITS.prompt));
+        await env.PROMPTS_KV.put(`prompt_${userId}_${cid}`, String(prompt).slice(0, LIMITS.prompt));
       }
     }
 

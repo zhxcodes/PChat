@@ -557,23 +557,24 @@ export async function loadPendingCommitments(env, userId, contact) {
 // 系统提示词构建（从 api/ai/stream.js 原样抽出，拼接顺序与文案保持不变）
 // 抽取范围：stream.js 中「系统提示词 = promptRaw ...」到「【本次重新生成的特殊要求】...」段。
 // 拼接顺序（顺序即行为，改动会改变模型看到的提示词）：
-//   1) 角色设定 prompt_{contact}（缺失时回退默认人设）
+//   1) 角色设定 prompt_${userId}_${contact}（缺失时回退默认人设）
 //   2) 安全词分支：命中 → 只保留中性安全响应指令，跳过下面全部角色化内容
 //      未命中 → 回复格式要求 → 当前场景 → 你的外貌 → 关于用户 → 你此刻的心情 → 关系阶段
 //   3) 长期记忆（内含用户近期情绪倾向）
 //   4) 你答应过用户的事（未完成的承诺，安全词触发时跳过）
 //   5) 导演词说明 → 6) 当前时间 → 7) 本次重新生成的特殊要求
 // 调用方负责加载数据并通过 opts 传入（安全词触发时必须传空数组，与原实现一致）；
-// opts.promptRaw 未提供时本函数自行读 KV（键名 prompt_{contact} 不变）。
-// 注意：userId 仅为对齐调用签名保留，偏好已由调用方加载传入 userPreference。
+// opts.promptRaw 未提供时本函数自行读 KV（键名 prompt_${userId}_${contact}）。
+// 注意：userId 参与 KV key 命名（不同用户的同名 contact_id 不能互相覆盖），
+//       偏好已由调用方加载传入 userPreference。
 // ============================================================
 export async function buildSystemPrompt(env, userId, contact, opts) {
   const o = opts || {};
 
-  // 角色设定：优先用调用方已并行加载的 promptRaw，未传时自行回源 KV（键名与原来一致）
+  // 角色设定：优先用调用方已并行加载的 promptRaw；未传时回源用户自己的 KV 键
   const promptRaw = (o.promptRaw !== undefined)
     ? o.promptRaw
-    : await env.PROMPTS_KV.get(`prompt_${contact}`).catch((e) => {
+    : await env.PROMPTS_KV.get(`prompt_${userId}_${contact}`).catch((e) => {
         console.warn('读取提示词失败:', e.message);
         return null;
       });
@@ -788,6 +789,51 @@ export async function verifyTurnstile(env, token, ip) {
   }
 }
 
+// ---------- Turnstile 密钥与生效状态 ----------
+// 两把密钥都只从环境变量读取，仓库里不放任何真实值（开源部署各配各的）：
+//   TURNSTILE_SITE_KEY —— 站点密钥，公开，由 /functions/_middleware.js 注入到 index.html 的 meta；
+//   TURNSTILE_SECRET   —— 服务端密钥，保密，只在 siteverify 调用中使用，绝不下发前端。
+// 生效条件：两把密钥都配置 + 运行级开关 turnstile_enabled = 1（管理页「功能开关」可切换）。
+// 只配置一半时一律视为未启用，避免「前端有验证码但后端不校验」或反之的错位。
+
+// 站点密钥会被写进 HTML 属性，先按 Turnstile 实际字符集校验，避免环境变量成为注入点
+const TURNSTILE_SITE_KEY_RE = /^[A-Za-z0-9_-]{10,200}$/;
+
+export function getTurnstileSiteKey(env) {
+  const raw = (env && env.TURNSTILE_SITE_KEY) ? String(env.TURNSTILE_SITE_KEY).trim() : '';
+  return TURNSTILE_SITE_KEY_RE.test(raw) ? raw : '';
+}
+
+export function hasTurnstileSecret(env) {
+  return !!(env && env.TURNSTILE_SECRET && String(env.TURNSTILE_SECRET).trim());
+}
+
+// 统一口径的生效状态。settings 可选：调用方已经读过配置时传进来，省一次 KV/D1 读。
+export async function getTurnstileState(env, settings) {
+  const siteKey = getTurnstileSiteKey(env);
+  const secretConfigured = hasTurnstileSecret(env);
+  let enabled = false;
+  try {
+    const s = settings || (await getAppSettings(env));
+    enabled = isSettingEnabled(s, 'turnstile_enabled');
+  } catch (e) {
+    enabled = false; // 配置读取异常时按「未启用」处理（保持可登录）
+  }
+  const keysConfigured = !!siteKey && secretConfigured;
+  return {
+    siteKey,
+    secretConfigured,
+    enabled,
+    keysConfigured,
+    active: keysConfigured && enabled,
+  };
+}
+
+// 登录 / 注册入口用：是否必须校验人机验证
+export async function isTurnstileActive(env, settings) {
+  return (await getTurnstileState(env, settings)).active;
+}
+
 // 亲密度 → 关系阶段（第 14 项）
 export function intimacyStage(intimacy) {
   const n = Number(intimacy) || 0;
@@ -924,7 +970,7 @@ export const DEFAULT_APP_SETTINGS = Object.freeze({
   invite_required: '1',        // 注册是否必须邀请码（默认开启）
   daily_token_limit: '0',      // 每用户每日 token 配额，0 = 不限制（配合 user_usage 表）
   max_users: '0',              // 用户总数上限，0 = 不限制
-  turnstile_enabled: '0',      // 登录 / 注册是否强制人机验证
+  turnstile_enabled: '1',      // 登录 / 注册是否强制人机验证（需两把 Turnstile 密钥都配置，见 getTurnstileState）
   maintenance_mode: '0',       // 维护模式（Phase 2 在中间件里拦截非管理员）
   announcement: '',            // 全站公告（空字符串 = 不展示）
 

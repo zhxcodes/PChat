@@ -2,6 +2,7 @@
 // GET /api/role/:id/prompt   -> 读取角色提示词（KV）
 // PUT /api/role/:id/prompt   -> 更新角色提示词（KV）
 // 认证由 /api/_middleware.js 统一处理（data.userId）
+// 注意：KV key 必须带 userId（prompt_${userId}_${id}），否则不同用户的同名 contact_id 会互相覆盖。
 
 import { json, getUserId, LIMITS } from '../../../_lib.js';
 
@@ -10,7 +11,7 @@ export async function onRequestGet({ env, data, params }) {
   if (!userId) return json({ error: '未登录' }, 401);
 
   const { id } = params;
-  const prompt = (await env.PROMPTS_KV.get(`prompt_${id}`)) || '';
+  const prompt = (await env.PROMPTS_KV.get(`prompt_${userId}_${id}`)) || '';
   return json({ prompt });
 }
 
@@ -31,6 +32,6 @@ export async function onRequestPut({ request, env, data, params }) {
     return json({ error: `提示词长度不能超过 ${LIMITS.prompt} 字符` }, 400);
   }
 
-  await env.PROMPTS_KV.put(`prompt_${id}`, prompt);
+  await env.PROMPTS_KV.put(`prompt_${userId}_${id}`, prompt);
   return json({ success: true });
 }

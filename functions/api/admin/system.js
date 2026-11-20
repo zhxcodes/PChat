@@ -8,6 +8,7 @@ import {
   getAppSettings,
   isSettingEnabled,
   hasSecretMasterKey,
+  getTurnstileState,
   requireAdminRole,
 } from '../../_lib.js';
 
@@ -17,6 +18,8 @@ export async function onRequestGet({ env, data }) {
 
   const settings = await getAppSettings(env);
   const retention = Number(settings.login_log_retention_days);
+  // 第 9 项：Turnstile 状态（只返回布尔值 / 开关，绝不返回密钥内容）
+  const turnstile = await getTurnstileState(env, settings);
 
   return json({
     secret_master_key_configured: hasSecretMasterKey(env),
@@ -28,5 +31,10 @@ export async function onRequestGet({ env, data }) {
     invite_required: isSettingEnabled(settings, 'invite_required'),
     allowed_origins_configured: !!(env.ALLOWED_ORIGINS && String(env.ALLOWED_ORIGINS).trim()),
     login_log_retention_days: Number.isFinite(retention) && retention > 0 ? Math.floor(retention) : 30,
+    turnstile_site_key_configured: !!turnstile.siteKey,
+    turnstile_secret_configured: turnstile.secretConfigured,
+    turnstile_keys_configured: turnstile.keysConfigured,
+    turnstile_enabled: turnstile.enabled,
+    turnstile_active: turnstile.active,
   });
 }

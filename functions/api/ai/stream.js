@@ -206,8 +206,9 @@ export async function onRequestPost({ request, env, data, ctx }) {
     // ---------- 1+2+3. 并行加载：联系人参数 / 历史记录 / 系统提示词 / 角色元数据 ----------
     // 历史记录统一走 _lib.loadChatHistory（KV 优先、D1 回源、完整性校验、去重），
     // 与 history.js 完全同口径，杜绝两处缓存逻辑不一致导致的碎片化。
-    // 角色元数据 meta_{contact} 里保存了“回复格式要求”（format），必须拼进系统提示词，
-    // 否则 AI 完全看不到这条规则（此前只用了 prompt_{contact}，format 一直未生效）。
+    // 角色元数据 meta_${userId}_${contact} 里保存了“回复格式要求”（format），必须拼进系统提示词，
+    // 否则 AI 完全看不到这条规则（此前只用了不带 userId 的 prompt_ 键，format 一直未生效）。
+    // KV key 带 userId：不同用户拥有相同 contact_id 时，设定互不覆盖。
     const [contactRow, historyLoaded, promptRaw, metaRaw, userPreference, userSafeword] = await Promise.all([
       env.DB.prepare(
         'SELECT temperature, top_p, max_tokens, frequency_penalty, presence_penalty, memory_window, context_window, mood, intimacy FROM contacts WHERE user_id = ? AND contact_id = ?'
@@ -216,11 +217,11 @@ export async function onRequestPost({ request, env, data, ctx }) {
         return null;
       }),
       loadChatHistory(env, userId, contact),
-      env.PROMPTS_KV.get(`prompt_${contact}`).catch((e) => {
+      env.PROMPTS_KV.get(`prompt_${userId}_${contact}`).catch((e) => {
         console.warn('读取提示词失败:', e.message);
         return null;
       }),
-      env.PROMPTS_KV.get(`meta_${contact}`).catch((e) => {
+      env.PROMPTS_KV.get(`meta_${userId}_${contact}`).catch((e) => {
         console.warn('读取角色元数据失败:', e.message);
         return null;
       }),

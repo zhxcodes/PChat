@@ -15,6 +15,8 @@ import {
   json,
   getAppSettings,
   setAppSettings,
+  getTurnstileSiteKey,
+  hasTurnstileSecret,
   requireAdminRole,
   logAdminAction,
   getClientIp,
@@ -25,6 +27,7 @@ import {
 const WRITABLE_SETTINGS = new Set([
   'allow_register',
   'invite_required',
+  'turnstile_enabled',
   'user_api_key_enabled',
   'system_api_key_enabled',
   'memory_enabled',
@@ -52,7 +55,12 @@ export async function onRequestGet({ env, data }) {
   if (denied) return denied;
 
   const settings = await getAppSettings(env, { skipCache: true });
-  return json({ settings });
+  // 顺带告知前端「密钥是否已配置」，用于在开关旁给出提示（只返回布尔值，不含密钥）
+  const turnstile = {
+    site_key_configured: !!getTurnstileSiteKey(env),
+    secret_configured: hasTurnstileSecret(env),
+  };
+  return json({ settings, turnstile });
 }
 
 export async function onRequestPut({ request, env, data }) {

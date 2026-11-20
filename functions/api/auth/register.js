@@ -19,6 +19,7 @@ import {
   getAppSettings,
   isSettingEnabled,
   verifyTurnstile,
+  isTurnstileActive,
   getClientIp,
 } from '../../_lib.js';
 
@@ -114,8 +115,8 @@ export async function onRequestPost({ request, env }) {
       return json({ error: '该用户名不可用' }, 403);
     }
 
-    // Turnstile：与登录同口径（未配置 TURNSTILE_SECRET 时跳过）
-    if (env.TURNSTILE_SECRET) {
+    // Turnstile：与登录同口径（两把密钥都配置 + 运行级开关打开才校验）
+    if (await isTurnstileActive(env, settings)) {
       const token = typeof body.turnstile_token === 'string' ? body.turnstile_token : '';
       const tv = await verifyTurnstile(env, token, getClientIp(request));
       if (!tv.ok) return json({ error: tv.error || '人机验证失败' }, 403);

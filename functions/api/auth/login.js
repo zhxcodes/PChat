@@ -8,7 +8,10 @@
 //   同名的存量账号会被认领为管理员，并把密码哈希替换为占位值（旧密码立即失效）。
 // - 普通用户：PBKDF2-SHA256 校验（旧无盐 SHA-256 登录后自动升级）；
 //   命中 'ENV_ADMIN_PROTECTED' 占位账号一律拒绝，账号 status != 'active' 拒绝。
-// - 暴力破解防护：同一 IP 15 分钟内最多 10 次（KV 近似计数，KV 异常时放行，避免锁死）。
+// - 暴力破解防护（双层，均基于 KV 近似计数，KV 异常时放行，避免锁死）：
+//   1) IP 维度：同一 IP 15 分钟内最多 10 次；
+//   2) 账号维度：同一 username 15 分钟内连续失败 5 次即锁定（返回 429），
+//      成功登录后清空该账号计数，防止攻击者用代理池绕过 IP 限流。
 // - 登录审计：成功 / 失败 / 拦截写入 login_logs（表缺失或写入失败时静默降级）。
 // ============================================================
 
@@ -17,6 +20,7 @@ import {
   createPBKDF2Hash,
   verifyPassword,
   verifyTurnstile,
+  getTurnstileState,
   writeEvent,
   getClientIp,
   logLoginAttempt,
@@ -25,7 +29,9 @@ import {
 } from '../../_lib.js';
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 分钟
-const RATE_LIMIT_MAX = 10;                   // 最大尝试次数
+const RATE_LIMIT_MAX = 10;                   // 单 IP 最大尝试次数
+const USER_FAIL_WINDOW_MS = 15 * 60 * 1000;  // 单账号失败统计窗口：15 分钟
+const USER_FAIL_MAX = 5;                     // 单账号窗口内最大失败次数
 const PASSWORD_MAX = 128;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 会话 7 天
 
@@ -59,6 +65,45 @@ async function recordLoginFailure(env, rate) {
 async function clearLoginRate(env, rate) {
   if (!rate) return;
   try { await env.PROMPTS_KV.delete(rate.key); } catch (e) { /* 忽略 */ }
+}
+
+// ---------- 账号维度防爆破 ----------
+// key 归一化（去首尾空白 + 小写）：避免 "Admin" / "admin " 这类变体各占一个计数器绕过限制。
+// KV 是最终一致存储，计数可能与实际有秒级偏差（与 IP 限流口径一致，够用且不会误锁）。
+function userFailKey(username) {
+  return `rl_login_user_${String(username == null ? '' : username).trim().toLowerCase().slice(0, 100)}`;
+}
+
+async function getUserFailRecord(env, username) {
+  try {
+    const key = userFailKey(username);
+    const now = Date.now();
+    const raw = await env.PROMPTS_KV.get(key, { type: 'json' });
+    let rec = (raw && typeof raw.count === 'number') ? raw : { count: 0, first: now };
+    // 超出窗口（15 分钟）重新计数
+    if (now - rec.first > USER_FAIL_WINDOW_MS) {
+      rec = { count: 0, first: now };
+    }
+    return { key, rec, now };
+  } catch (e) {
+    return null; // KV 异常时放行，避免因存储故障锁死账号
+  }
+}
+
+async function recordUserFailure(env, fail) {
+  if (!fail) return;
+  try {
+    fail.rec.count += 1;
+    await env.PROMPTS_KV.put(fail.key, JSON.stringify(fail.rec), {
+      expirationTtl: Math.ceil(USER_FAIL_WINDOW_MS / 1000),
+    });
+  } catch (e) { /* 忽略 */ }
+}
+
+// 登录成功（或密码正确但账号被停用）时清空账号失败计数，避免误伤正常用户
+async function clearUserFailure(env, fail) {
+  if (!fail) return;
+  try { await env.PROMPTS_KV.delete(fail.key); } catch (e) { /* 忽略 */ }
 }
 
 // 登录审计（旁路能力，失败不影响登录）
@@ -160,8 +205,21 @@ export async function onRequestPost({ request, env }) {
       return json({ error: '用户名或密码格式不正确' }, 400);
     }
 
-    // Turnstile 人机验证（第 9 项）：未配置 TURNSTILE_SECRET 时自动跳过
-    if (env.TURNSTILE_SECRET) {
+    // ---------- 账号维度锁定检查（先于 Turnstile / 密码哈希，避免为已锁账号继续消耗算力） ----------
+    const fail = await getUserFailRecord(env, username);
+    if (fail && fail.rec.count >= USER_FAIL_MAX) {
+      await logLogin(env, request, { status: 'blocked', reason: 'user_rate_limited' });
+      return json(
+        { error: '该账号尝试过于频繁，请稍后再试' },
+        429,
+        { 'Retry-After': String(Math.ceil(USER_FAIL_WINDOW_MS / 1000)) }
+      );
+    }
+
+    // Turnstile 人机验证（第 9 项）：TURNSTILE_SITE_KEY + TURNSTILE_SECRET 都配置，
+    // 且管理页「功能开关」里的人机验证开关打开时才校验；否则自动跳过（保持可用）。
+    const turnstile = await getTurnstileState(env);
+    if (turnstile.active) {
       const tv = await verifyTurnstile(env, turnstileToken, getClientIp(request));
       if (!tv.ok) return json({ error: tv.error || '人机验证失败' }, 403);
     }
@@ -171,6 +229,7 @@ export async function onRequestPost({ request, env }) {
     if (envAdminConfigured(env) && String(username) === adminUsername) {
       if (!constantTimeEqual(String(password), String(env.ADMIN_PASSWORD))) {
         await recordLoginFailure(env, rate);
+        await recordUserFailure(env, fail);
         await logLogin(env, request, { status: 'failed', reason: 'bad_admin_password' });
         return json({ error: '用户名或密码错误' }, 401);
       }
@@ -181,6 +240,7 @@ export async function onRequestPost({ request, env }) {
       }
 
       await clearLoginRate(env, rate);
+      await clearUserFailure(env, fail);
       const token = await createSession(env, user.id);
       await logLogin(env, request, { userId: user.id, status: 'success', reason: 'env_admin' });
       writeEvent(env, { type: 'login', userId: user.id, detail: user.username, value: 1 });
@@ -199,6 +259,7 @@ export async function onRequestPost({ request, env }) {
 
     if (!user) {
       await recordLoginFailure(env, rate);
+      await recordUserFailure(env, fail);
       await logLogin(env, request, { status: 'failed', reason: 'user_not_found' });
       return json({ error: '用户名或密码错误' }, 401);
     }
@@ -206,6 +267,7 @@ export async function onRequestPost({ request, env }) {
     // 环境变量管理员的占位账号：永远不接受密码登录（即使有人猜中占位字符串）
     if (user.password_hash === ENV_ADMIN_PROTECTED_HASH) {
       await recordLoginFailure(env, rate);
+      await recordUserFailure(env, fail);
       await logLogin(env, request, { userId: user.id, status: 'failed', reason: 'env_admin_protected' });
       return json({ error: '用户名或密码错误' }, 401);
     }
@@ -213,6 +275,7 @@ export async function onRequestPost({ request, env }) {
     const { valid, needsUpgrade } = await verifyPassword(password, user.password_hash);
     if (!valid) {
       await recordLoginFailure(env, rate);
+      await recordUserFailure(env, fail);
       await logLogin(env, request, { userId: user.id, status: 'failed', reason: 'bad_password' });
       return json({ error: '用户名或密码错误' }, 401);
     }
@@ -220,6 +283,7 @@ export async function onRequestPost({ request, env }) {
     // 密码正确后才告知「已停用」，避免未认证请求被用来枚举账号状态
     if (user.status !== 'active') {
       await clearLoginRate(env, rate);
+      await clearUserFailure(env, fail);
       await logLogin(env, request, {
         userId: user.id,
         status: 'blocked',
@@ -240,6 +304,7 @@ export async function onRequestPost({ request, env }) {
     }
 
     await clearLoginRate(env, rate);
+    await clearUserFailure(env, fail);
     const token = await createSession(env, user.id);
     await logLogin(env, request, { userId: user.id, status: 'success', reason: '' });
     writeEvent(env, { type: 'login', userId: user.id, detail: user.username, value: 1 });

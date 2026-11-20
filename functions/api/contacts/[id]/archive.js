@@ -74,10 +74,10 @@ export async function onRequestDelete({ request, env, data, params }) {
       return json({ error: '删除联系人记录失败' }, 500);
     }
 
-    // 清理 KV（失败不影响删除结果）
+    // 清理 KV（失败不影响删除结果）；角色设定 key 带 userId，避免误删其他用户的同名角色
     try { await env.CHAT_HISTORY.delete(`${CHAT_CACHE_PREFIX}${userId}_${cid}`); } catch (e) {}
-    try { await env.PROMPTS_KV.delete(`prompt_${cid}`); } catch (e) {}
-    try { await env.PROMPTS_KV.delete(`meta_${cid}`); } catch (e) {}
+    try { await env.PROMPTS_KV.delete(`prompt_${userId}_${cid}`); } catch (e) {}
+    try { await env.PROMPTS_KV.delete(`meta_${userId}_${cid}`); } catch (e) {}
     try { await env.PROMPTS_KV.delete(`mem_state_${userId}_${cid}`); } catch (e) {}
 
     // 清理向量（第 7 项，未绑定 Vectorize 时自动跳过）
