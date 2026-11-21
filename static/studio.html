@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>外观与玩法中心 · Personal Chat</title>
     <link rel="icon" href="/favicon.svg" id="app-favicon">
+    <!-- 首屏应用偏好，避免进页面闪一下默认配色 -->
     <script>
         (function () {
             var t = 'light';
@@ -31,7 +32,7 @@
     <header class="studio-topbar">
         <a class="studio-back" href="/"><i class="fas fa-chevron-left"></i><span>返回聊天</span></a>
         <div class="studio-brand"><i class="fas fa-wand-magic-sparkles"></i> 外观与玩法中心</div>
-        <span class="studio-version" data-app-version>v0.14.4</span>
+        <span class="studio-version" data-app-version>v1.0.0</span>
     </header>
 
     <div class="studio-wrap">
@@ -52,6 +53,7 @@
         </nav>
 
         <main class="studio-main" id="studioMain">
+
             <!-- ============ 实时预览 ============ -->
             <section class="studio-card studio-preview-card" id="studioPreview">
                 <div class="studio-card-head">
@@ -441,7 +443,7 @@
                     <h2><i class="fas fa-circle-info"></i> 关于与重置</h2>
                 </div>
                 <p class="studio-hint">
-                    当前版本 <b data-app-version>v0.14.4</b> ·
+                    当前版本 <b data-app-version>v1.0.0</b> ·
                     所有偏好都保存在这台设备的浏览器里（localStorage），换设备需要重新设置。
                 </p>
                 <div class="studio-about-row">
@@ -452,7 +454,7 @@
             </section>
 
             <div class="studio-foot">
-                Personal Chat · 外观与玩法中心 · <span data-app-version>v0.14.4</span>
+                Personal Chat · 外观与玩法中心 · <span data-app-version>v1.0.0</span>
             </div>
         </main>
     </div>
@@ -461,8 +463,11 @@
     <script src="/js/modal.js"></script>
     <script src="/js/marked.min.js"></script>
     <script src="/js/purify.min.js"></script>
+    <!-- enhance.js 提供「能力」：配色 / 氛围 / 字号 / 朗读 / 置顶 -->
     <script src="/js/enhance.js"></script>
+    <!-- studio.js 只负责这个页面的界面 -->
     <script src="/js/studio.js"></script>
+    <!-- 数据区（备份 / 导入 / 用量 / 热力图）单独一个文件，避免单文件过长 -->
     <script src="/js/studio-data.js"></script>
 </body>
 </html>

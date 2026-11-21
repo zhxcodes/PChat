@@ -1,0 +1,114 @@
+# ============================================================
+# PChat 部署流水线（v1.0 起唯一部署入口）
+# ------------------------------------------------------------
+# 顺序固定：checkout → setup-node → npm ci → 应用 D1 迁移 → 构建 → Direct Upload 部署
+#
+# 为什么改成 GitHub Actions + Direct Upload：
+#   - 迁移不再依赖 Pages 构建期钩子，仓库里没有构建期迁移脚本；
+#   - 账本 d1_migrations 由 Wrangler 独占管理，人不需要执行任何 SQL；
+#   - Pages 项目是 Direct Upload 模式（不再监听 Git），部署完全由本流水线完成。
+#
+# 使用者（fork 后）只需要：
+#   1) Actions 页面点击启用 workflows；
+#   2) 在 Settings → Secrets and variables → Actions 里添加：
+#        Secrets:   CLOUDFLARE_ACCOUNT_ID、CLOUDFLARE_API_TOKEN
+#        首次部署用上面两个；做数据结构初始化时再加第三个：
+#        Secrets:   D1_DATABASE_ID
+#      （可选 Variable: PAGES_PROJECT_NAME，默认 pchat）
+#
+# 两次部署的节奏（重要）：
+#   - 第一次：只有 ACCOUNT_ID + API_TOKEN → 迁移步骤**跳过并警告**，但应用照常部署，
+#     用来确认绑定 / 环境变量 / 函数都通了（此时登录会因无表报错，属预期）。
+#   - 第二次：补上 D1_DATABASE_ID → 迁移执行，表建好，登录正常。
+# ============================================================
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一时间只跑一个部署；取消进行中的任务可能打断迁移，所以不取消
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+      PAGES_PROJECT_NAME: ${{ vars.PAGES_PROJECT_NAME || 'pchat' }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖（wrangler 精确锁定在 devDependencies）
+        run: npm ci
+
+      - name: 检查必需 Secrets
+        run: |
+          set -euo pipefail
+          missing=0
+          [ -n "${CLOUDFLARE_API_TOKEN:-}" ]  || { echo "::error::缺少 Secret CLOUDFLARE_API_TOKEN（需 Cloudflare Pages: Edit 与 D1: Edit）"; missing=1; }
+          [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] || { echo "::error::缺少 Secret CLOUDFLARE_ACCOUNT_ID"; missing=1; }
+          [ "$missing" = "0" ] || exit 1
+          echo "Secrets 检查通过；PAGES_PROJECT_NAME=${PAGES_PROJECT_NAME}"
+
+      # ---------- 1) 数据库迁移（缺 D1_DATABASE_ID 时跳过，见文件头「两次部署」） ----------
+      - name: 应用 D1 迁移
+        if: ${{ env.D1_DATABASE_ID != '' }}
+        run: |
+          set -euo pipefail
+          echo "生成迁移用临时配置（真实 database_id 来自 Secret，不入库）"
+          sed -e "s|REPLACE_WITH_YOUR_D1_DATABASE_ID|${D1_DATABASE_ID}|" \
+              wrangler.example.toml > .wrangler-ci.toml
+          npx wrangler --version
+          echo "待应用的迁移："
+          npx wrangler d1 migrations list DB --remote --config .wrangler-ci.toml
+          npx wrangler d1 migrations apply DB --remote --force --config .wrangler-ci.toml
+          {
+            echo "### D1 迁移";
+            echo "账本：\`d1_migrations\`（由 Wrangler 托管）";
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 跳过迁移（首次部署）
+        if: ${{ env.D1_DATABASE_ID == '' }}
+        run: |
+          echo "::warning::未配置 Secret D1_DATABASE_ID，本次跳过数据库迁移，仅部署应用。"
+          echo "::warning::这是首次部署的预期状态：站点可打开、接口已连通，但登录会因缺少数据表而报错。"
+          echo "::warning::在 Settings → Secrets and variables → Actions 添加 D1_DATABASE_ID 后重新运行，即完成数据结构初始化。"
+          {
+            echo "### 数据结构尚未初始化";
+            echo "";
+            echo "缺少 Secret \`D1_DATABASE_ID\`，已跳过 \`wrangler d1 migrations apply\`。";
+            echo "补上该 Secret 后重新运行本工作流即可建表。";
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------- 2) 构建（静态资源自检，不做迁移） ----------
+      - name: 构建
+        run: npm run build
+
+      # ---------- 3) Direct Upload 部署（预构建产物） ----------
+      - name: 部署到 Cloudflare Pages
+        run: |
+          set -euo pipefail
+          npx wrangler pages deploy static \
+            --project-name "$PAGES_PROJECT_NAME" \
+            --branch main
+          {
+            echo "### 部署";
+            echo "项目：\`$PAGES_PROJECT_NAME\`（Direct Upload）";
+          } >> "$GITHUB_STEP_SUMMARY"

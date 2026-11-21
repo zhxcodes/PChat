@@ -1,3 +1,4 @@
+// static/js/studio.js
 // ============================================================
 // 「外观与玩法中心」（/studio）页面逻辑
 // ------------------------------------------------------------
@@ -610,7 +611,7 @@
     // ======================== 初始化 ========================
     function init() {
         Array.prototype.forEach.call(document.querySelectorAll('[data-app-version]'), function (n) {
-            n.textContent = 'v' + (window.APP_VERSION || '0.14.4');
+            n.textContent = 'v' + (window.APP_VERSION || '1.0.0');
         });
 
         if (!E) {

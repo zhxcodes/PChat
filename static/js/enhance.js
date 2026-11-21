@@ -670,7 +670,7 @@
         acts.push({ icon: 'fa-user', label: '打开个人资料', keywords: 'profile 资料 头像 密码', run: function () { var b = $('profile-btn'); if (b) b.click(); } });
         acts.push({ icon: 'fa-cloud-arrow-down', label: '强制同步云端数据', keywords: 'sync 同步 刷新', run: function () { var b = $('syncBtn'); if (b) b.click(); } });
         acts.push({ icon: 'fa-book', label: '查看更新日志', keywords: 'changelog 更新 版本', run: function () { callGlobal('openChangelog'); } });
-        acts.push({ icon: 'fa-book-open', label: '打开使用手册', keywords: 'docs 手册 帮助', run: function () { window.open('/docs/', '_blank', 'noopener'); } });
+        acts.push({ icon: 'fa-book-open', label: '打开使用手册', keywords: 'docs 手册 帮助', run: function () { window.open('https://bypc.us.ci/docs/', '_blank', 'noopener'); } });
         acts.push({ icon: 'fa-cogs', label: '打开管理后台', keywords: 'admin 后台 角色', run: function () { window.location.href = '/admin/roles.html'; } });
         acts.push({ icon: 'fa-right-from-bracket', label: '退出登录', keywords: 'logout 退出', run: function () { callGlobal('logout'); } });
 

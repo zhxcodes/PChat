@@ -1,0 +1,97 @@
+# ============================================================
+# Cloudflare Pages 配置模板（Pages Functions + 静态资源）
+# ------------------------------------------------------------
+# 仓库只提供这份模板，**不提供生效的 wrangler.toml**：
+#   - 控制台（Git 集成）部署：不需要 wrangler.toml，绑定与环境变量都在控制台配；
+#     仓库里一旦存在 wrangler.toml，Pages 会以它作为配置来源，控制台对应项变成只读。
+#   - 本地开发 / 命令行部署：执行 npm run dev 或 npm run deploy 时会自动把本文件
+#     复制为 wrangler.toml（该文件已被 .gitignore 忽略），再替换下面的占位符。
+#
+# 本文件不含任何真实 ID 或密钥，占位符形如 REPLACE_WITH_xxx。
+# ============================================================
+# 项目名：决定 xxx.pages.dev 子域。控制台部署时由控制台决定，可忽略；
+# 命令行部署时改成你自己的名字（a-z、0-9、连字符）。
+name = "pchat"
+compatibility_date = "2024-12-18"
+compatibility_flags = ["nodejs_compat"]
+
+# Pages 静态资源目录（函数目录固定为项目根下的 functions/）
+pages_build_output_dir = "static"
+
+# ========== D1 数据库绑定 ==========
+# database_id 不是密钥，但它是某个账号下的资源标识，仓库里统一放占位符。
+# 真实值：Dashboard 里的 D1 页面可以看到，或 wrangler d1 list 查询。
+[[d1_databases]]
+binding = "DB"
+database_name = "PersonalChat"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# ========== KV 命名空间绑定 ==========
+# 两个 KV：聊天历史热缓存 / 角色设定与提示词缓存。同样只放占位符。
+[[kv_namespaces]]
+binding = "CHAT_HISTORY"
+id = "REPLACE_WITH_YOUR_CHAT_HISTORY_KV_ID"
+
+[[kv_namespaces]]
+binding = "PROMPTS_KV"
+id = "REPLACE_WITH_YOUR_PROMPTS_KV_ID"
+
+# ========== Workers AI 绑定（角色心情生成，第 13 项） ==========
+# 未绑定时心情生成会自动跳过（不报错）；如需更换模型可加环境变量 AI_MOOD_MODEL
+# 注意：本地 wrangler dev 会为 AI 绑定建立远程会话，纯离线环境可临时注释本段。
+[ai]
+binding = "AI"
+
+# ========== 环境变量 ==========
+# 原则：真实密钥一律不进仓库。
+#   - Git 集成部署：全部在 Dashboard → Settings → Variables and Secrets 配；
+#   - 本地开发：写在 .dev.vars（已被 .gitignore 忽略，模板见 .dev.vars.example）；
+#   - wrangler 部署：用 wrangler pages secret put <名称>。
+[vars]
+# 大模型 API Key（必填，真实值只放 Dashboard / secret）
+DEEPSEEK_API_KEY = ""
+# ===== 第 6 项：Cloudflare AI Gateway（可选）=====
+# 在仪表板创建 Gateway（提供商选 DeepSeek）后填入；
+# 留空则自动直连 https://api.deepseek.com/v1
+# 格式：https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/deepseek
+AI_GATEWAY_URL = ""
+
+# 人机验证站点密钥（公开值，但仍建议按部署环境各自配置）
+TURNSTILE_SITE_KEY = ""
+# ===== 第 13 项：心情生成模型（可选）=====
+# AI_MOOD_MODEL = "@cf/meta/llama-3.2-3b-instruct"
+
+# ===== 第 7 项：Vectorize 语义记忆检索（可选）=====
+# 步骤：1) 创建索引（维度 512、cosine、模型 @cf/baai/bge-small-zh-v1.5）
+#       wrangler vectorize create pchat-memories --dimensions=512 --metric=cosine
+#       2) 取消下面注释并部署（未绑定时代码自动回退为“最近记忆”）
+# 注意：不打算建索引请整段删除，否则 wrangler 部署时会报 index not found。
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "pchat-memories"
+
+# ===== 第 8 项：Analytics Engine 埋点（可选）=====
+# 数据集在首次写入时自动创建；未绑定时埋点静默跳过。
+# 注意：AE 数据只能在 Cloudflare 仪表板 / Grafana 查看，Function 内无法读回；
+#      统计面板（/admin/stats.html）的数据来自 D1 聚合。
+[[analytics_engine_datasets]]
+binding = "AE"
+dataset = "pchat_events"
+
+# ============================================================
+# D1 迁移（Git 集成部署时自动执行，见 tools/db-migrate.mjs）
+# ------------------------------------------------------------
+# 以下变量配在 Pages 项目的「环境变量」（Production 环境）里，
+# 只用于构建阶段的迁移，不会注入到 Functions 运行时：
+#
+#   CLOUDFLARE_API_TOKEN     必填。API Token 需要 D1 编辑权限（Account → D1 → Edit）
+#   CLOUDFLARE_ACCOUNT_ID    必填。账号 ID（Dashboard 右侧栏可见）
+#   PCHAT_D1_DATABASE_ID     推荐。上面 [[d1_databases]] 里那个库的真实 ID
+#   PCHAT_D1_DATABASE_NAME   可选。没有 ID 时用它按名称反查（DB 名重名会报错）
+#   PCHAT_D1_BINDING         可选，默认 DB
+#   PCHAT_PRODUCTION_BRANCH  可选，默认 main
+#   NODE_ENV=development     建议。否则构建时不会安装 devDependencies（wrangler）
+#   PCHAT_SKIP_MIGRATIONS=1  应急。显式跳过自动迁移
+#
+# 这些 ID / Token 只存在于 Dashboard，不进仓库。
+# ============================================================

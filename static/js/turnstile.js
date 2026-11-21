@@ -1,3 +1,9 @@
+// static/js/turnstile.js
+// 第 9 项：Turnstile 人机验证（前端，自包含）
+// 站点密钥不再硬编码：由 functions/_middleware.js 从环境变量 TURNSTILE_SITE_KEY 注入到
+// index.html 的 <meta name="turnstile-site-key">；为空表示未启用（后端也会跳过校验）。
+// 提供：renderTurnstile(containerId) / getTurnstileToken(containerId) / resetTurnstile(containerId)
+
 (function () {
     const widgets = {}; // containerId -> widgetId
 

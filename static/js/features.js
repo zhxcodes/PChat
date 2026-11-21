@@ -418,7 +418,7 @@ function initClearHistory() {
 // ======================== 版本号 / 更新日志（关于项目） ========================
 // 版本号唯一来源是 static/js/version.js（0.11.0 起独立成文件，管理页也要用）；
 // 这里保留兜底，万一某个页面漏引 version.js 也不会显示 undefined。
-window.APP_VERSION = window.APP_VERSION || '0.14.4';
+window.APP_VERSION = window.APP_VERSION || '1.0.0';
 
 // 回填页面上所有 [data-app-version] 占位（设置面板「关于项目」）
 function fillVersionLabels() {
@@ -443,7 +443,7 @@ async function openChangelog() {
             </div>
         </div>
         <div class="changelog-footer">
-            <a class="btn-secondary" href="/docs/" target="_blank" rel="noopener">
+            <a class="btn-secondary" href="https://bypc.us.ci/docs/" target="_blank" rel="noopener">
                 <i class="fas fa-book-open"></i> 使用手册
             </a>
         </div>

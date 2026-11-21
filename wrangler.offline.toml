@@ -1,0 +1,49 @@
+# ============================================================
+# 离线调试配置（0.12.0 新增）——仅用于本地开发/自动化测试
+# ------------------------------------------------------------
+# 为什么需要：wrangler.toml 里声明了 Workers AI 与 Vectorize 绑定，
+# 这两者在本地 dev 时会尝试建立**远程会话**；断网 / Cloudflare 不可达时
+# `npm run dev` 会直接启动失败（Failed to start the remote proxy session）。
+#
+# 本配置保留 D1 / KV / Analytics Engine（均为本地模拟），去掉 AI 与 Vectorize：
+#   - 角色心情生成（第 13 项）会自动跳过（代码里对 env.AI 缺失有兜底）
+#   - 语义记忆检索会自动回退为「最近 N 条」（代码里对 env.VECTORIZE 缺失有兜底）
+#   - 聊天主流程、导入导出、洞察、外观中心都完全可用
+#
+# 用法：npm run dev:offline
+# 注意：发布仍然使用 wrangler.toml，不要用本文件部署。
+#
+# 这里的 ID 与 wrangler.toml 保持一致（占位符）：本地 D1 以 database_id 作为
+# 本地库的标识，两边必须相同，否则 npm run db:migrate:local 迁移到的会是另一个本地库。
+# ============================================================
+name = "pchat"
+compatibility_date = "2024-12-18"
+compatibility_flags = ["nodejs_compat"]
+
+pages_build_output_dir = "static"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "PersonalChat"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "CHAT_HISTORY"
+id = "REPLACE_WITH_YOUR_CHAT_HISTORY_KV_ID"
+
+[[kv_namespaces]]
+binding = "PROMPTS_KV"
+id = "REPLACE_WITH_YOUR_PROMPTS_KV_ID"
+
+[[analytics_engine_datasets]]
+binding = "AE"
+dataset = "pchat_events"
+
+[vars]
+AI_GATEWAY_URL = ""
+# 本地调试时把 DEEPSEEK_API_KEY 写在 .dev.vars 里（模板见 .dev.vars.example），不要提交。
+
+# 本地联调 Turnstile（可选）：取消注释并填自己的密钥即可验证注入与校验流程。
+# 注意 TURNSTILE_SECRET 只用于本地，不要提交真实值；不配则前后端都自动跳过。
+# TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+# TURNSTILE_SECRET = "1x0000000000000000000000000000000AA"

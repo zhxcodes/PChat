@@ -915,7 +915,7 @@ export async function updateMoodAndIntimacy(env, userId, contact, messages) {
 // 兼容性：只新增导出，未改动任何既有函数；不触碰前端与接口代码。
 // ============================================================
 
-// 用户角色 / 状态的允许值（与 schema.sql 注释保持一致，供 Phase 2 校验用）
+// 用户角色 / 状态的允许值（与 migrations/ 基线迁移中的 users 表定义保持一致，供 Phase 2 校验用）
 export const USER_ROLES = ['user', 'admin'];
 export const USER_STATUSES = ['active', 'disabled', 'banned'];
 

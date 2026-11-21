@@ -1,0 +1,52 @@
+# ============================================================
+# PChat .gitignore
+# ------------------------------------------------------------
+# 原则：依赖、本地模拟数据、本地密钥、构建产物都不入库。
+# 部署方式：GitHub Actions 应用 D1 迁移并 Direct Upload 部署（.github/workflows/deploy.yml）
+# 重要：仓库里**不放生效的 wrangler.toml**，只放模板 wrangler.example.toml。
+#       本地生成的 wrangler.toml 会填入真实数据库 ID，因此必须忽略；
+#       真实密钥（API Key、管理员密码、主密钥、D1 ID）一律走 Secret / 控制台。
+# ============================================================
+
+# 依赖
+node_modules/
+docs-src/node_modules/
+
+# 本地生效的 wrangler 配置（由 wrangler.example.toml 生成，含真实 ID，禁止提交）
+wrangler.toml
+
+# CI 里由 wrangler.example.toml 生成、用于迁移的临时配置
+.wrangler-ci.toml
+
+# 本地 wrangler 状态（本地 D1 / KV 模拟数据）
+.wrangler/
+
+# 离线调试的临时备份（正常退出会自动删除）
+wrangler.toml.dev-backup
+
+# 本地密钥（不要提交）：wrangler pages dev 会读取
+.dev.vars
+.dev.vars.*
+# 但模板文件要入库，方便别人照着填
+!.dev.vars.example
+
+# 本地参考用的结构导出（schema.sql 保留在仓库中，仅作阅读参考）
+schema.local.sql
+
+# 文档构建产物缓存 / 临时产物
+docs-src/.vitepress/cache/
+docs-src/.vitepress/dist/
+.verify-functions/
+
+# 临时目录
+.tmp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+
+# 说明：static/docs/ 是文档「发布产物」，必须入库（它才是线上 /docs/），
+#       所以这里不忽略它；要改文档请改 docs-src/ 后跑 npm run docs:build。
