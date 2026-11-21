@@ -40,6 +40,9 @@ PChat 为自托管的多用户 AI 角色对话站点，运行于 Cloudflare Page
 
 ## 部署
 
+> **顺序很重要**：先完成下面的「Cloudflare 侧一次性准备」，再配 GitHub 侧的两步。
+> 只配 Secrets 就推代码，工作流会停在「确认 Pages 项目存在」并提示 `The Pages project "pchat" does not exist`（不会执行迁移）。
+
 ### 使用者需要做的两步（GitHub 侧）
 
 1. 打开仓库的 **Actions** 页面，点击启用 workflows（fork 默认不运行任何工作流）。

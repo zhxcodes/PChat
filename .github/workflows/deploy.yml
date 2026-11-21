@@ -86,6 +86,25 @@ jobs:
       - name: 安装依赖（wrangler 精确锁定在 devDependencies）
         run: npm ci
 
+      # ---------- 0) 预检：Pages 项目是否已创建（避免迁移跑完才失败） ----------
+      - name: 确认 Pages 项目存在
+        run: |
+          set -euo pipefail
+          echo "目标项目：$PAGES_PROJECT_NAME"
+          list_out="$(npx wrangler pages project list 2>&1)" || {
+            printf '%s\n' "$list_out"
+            echo "::error::无法列出 Pages 项目：请检查 CLOUDFLARE_API_TOKEN 是否具备 Cloudflare Pages: Edit 权限。"
+            exit 1
+          }
+          printf '%s\n' "$list_out"
+          if ! printf '%s' "$list_out" | grep -qF "$PAGES_PROJECT_NAME"; then
+            echo "::error::Pages 项目 \"$PAGES_PROJECT_NAME\" 不存在。请先在 Cloudflare 控制台创建 Direct Upload 项目，"
+            echo "::error::并完成 D1/KV 绑定与运行期环境变量（见 https://bypc.us.ci/docs/deploy-web 第 3~5 步），"
+            echo "::error::或在 GitHub 添加 Variable PAGES_PROJECT_NAME 指向已存在的项目。"
+            exit 1
+          fi
+          echo "Pages 项目存在，继续。"
+
       # ---------- 1) 数据库迁移（缺 D1_DATABASE_ID 时跳过，见文件头「两次部署」） ----------
       - name: 应用 D1 迁移
         if: ${{ env.D1_DATABASE_ID != '' }}
