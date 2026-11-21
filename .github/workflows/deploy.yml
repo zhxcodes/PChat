@@ -3,23 +3,19 @@
 # ------------------------------------------------------------
 # 顺序固定：checkout → setup-node → npm ci → 应用 D1 迁移 → 构建 → Direct Upload 部署
 #
-# 为什么改成 GitHub Actions + Direct Upload：
-#   - 迁移不再依赖 Pages 构建期钩子，仓库里没有构建期迁移脚本；
-#   - 账本 d1_migrations 由 Wrangler 独占管理，人不需要执行任何 SQL；
-#   - Pages 项目是 Direct Upload 模式（不再监听 Git），部署完全由本流水线完成。
+# 行为约定（重要）：
+#   - 未配置 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 时，preflight 会判定「跳过」，
+#     整个工作流以**成功**结束、deploy 作业显示为 skipped（灰色，不会有红叉）。
+#     这样上游仓库（作者不用 Actions 部署）保持安静，fork 的人配好 Secrets 后自动生效。
+#   - 只配了 ACCOUNT_ID + API_TOKEN：正常部署，但迁移步骤**跳过并警告**（第一次部署，确认连通性）。
+#   - 再补 D1_DATABASE_ID：迁移执行，账本 d1_migrations 建立，登录恢复正常。
 #
-# 使用者（fork 后）只需要：
+# 使用者（fork 后）：
 #   1) Actions 页面点击启用 workflows；
-#   2) 在 Settings → Secrets and variables → Actions 里添加：
-#        Secrets:   CLOUDFLARE_ACCOUNT_ID、CLOUDFLARE_API_TOKEN
-#        首次部署用上面两个；做数据结构初始化时再加第三个：
-#        Secrets:   D1_DATABASE_ID
+#   2) Settings → Secrets and variables → Actions 添加：
+#        CLOUDFLARE_ACCOUNT_ID、CLOUDFLARE_API_TOKEN
+#        需要初始化数据库时再加：D1_DATABASE_ID
 #      （可选 Variable: PAGES_PROJECT_NAME，默认 pchat）
-#
-# 两次部署的节奏（重要）：
-#   - 第一次：只有 ACCOUNT_ID + API_TOKEN → 迁移步骤**跳过并警告**，但应用照常部署，
-#     用来确认绑定 / 环境变量 / 函数都通了（此时登录会因无表报错，属预期）。
-#   - 第二次：补上 D1_DATABASE_ID → 迁移执行，表建好，登录正常。
 # ============================================================
 name: Deploy
 
@@ -37,7 +33,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 预检：只判断「能不能部署」，缺 Secrets 时安静跳过（不失败）
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: 检查是否具备部署凭据
+        id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "${TOKEN:-}" ]   || missing="${missing} CLOUDFLARE_API_TOKEN"
+          [ -n "${ACCOUNT:-}" ] || missing="${missing} CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::notice::跳过部署：未配置 Secrets:${missing}。这是预期行为（普通使用者配置后会自动部署）。"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### 已跳过部署";
+              echo "";
+              echo "未配置 Secrets:${missing}。";
+              echo "在 Settings → Secrets and variables → Actions 添加后，本工作流会自动执行部署。";
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -57,15 +85,6 @@ jobs:
 
       - name: 安装依赖（wrangler 精确锁定在 devDependencies）
         run: npm ci
-
-      - name: 检查必需 Secrets
-        run: |
-          set -euo pipefail
-          missing=0
-          [ -n "${CLOUDFLARE_API_TOKEN:-}" ]  || { echo "::error::缺少 Secret CLOUDFLARE_API_TOKEN（需 Cloudflare Pages: Edit 与 D1: Edit）"; missing=1; }
-          [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] || { echo "::error::缺少 Secret CLOUDFLARE_ACCOUNT_ID"; missing=1; }
-          [ "$missing" = "0" ] || exit 1
-          echo "Secrets 检查通过；PAGES_PROJECT_NAME=${PAGES_PROJECT_NAME}"
 
       # ---------- 1) 数据库迁移（缺 D1_DATABASE_ID 时跳过，见文件头「两次部署」） ----------
       - name: 应用 D1 迁移

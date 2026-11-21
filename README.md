@@ -72,6 +72,8 @@ PChat 为自托管的多用户 AI 角色对话站点，运行于 Cloudflare Page
 
 这样设计是为了先确认「项目功能初始化」通过（绑定、环境变量、Functions 都正常），再做「数据结构初始化」，避免一次失败全部卡住。
 
+> 若连 `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` 都没配置，工作流会直接**跳过**（deploy 作业显示为 skipped，不会失败），所以上游仓库不会因此出现红叉。
+
 > 用户侧的全部操作都在 GitHub 网页与 Cloudflare 控制台完成；不需要 Node.js、wrangler 或任何命令行。
 
 ## 迁移规则

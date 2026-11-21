@@ -16,6 +16,9 @@
 
 - 新增 `.github/workflows/deploy.yml`，顺序固定：
   `checkout → setup-node(22) → npm ci → 应用 D1 迁移 → 构建 → wrangler pages deploy`（Direct Upload，上传预构建产物）。
+- 工作流拆为 `preflight` + `deploy` 两个 job：未配置 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 时
+  `preflight` 判定「跳过」，`deploy` 显示为 skipped，整个运行**成功**——上游仓库不会因为没有 Secrets 而出现红叉；
+  fork 补上 Secrets 后自动开始部署。
 - 删除 Pages 构建期迁移：`tools/db-migrate.mjs`、`tools/db-baseline.mjs`、`postbuild` 钩子、
   `CF_PAGES` / 分支门禁 / 临时配置生成逻辑，以及 `db:migrate*`、`db:baseline:*`、`db:init*` 脚本。
 - 删除旧 workflow `.github/workflows/d1-migrate.yml`：由 `deploy.yml` 统一入口，避免两套流水线。
@@ -37,7 +40,19 @@
 - 删除 `static/functions/`（45 个文件，与根 `functions/` 逐字节相同）：Direct Upload 会把它当静态资源公开，
   而根 `functions/` 已由 Wrangler 自动打包为 Pages Functions；`npm run build` 会检测并阻止再次出现。
 - `wrangler` 精确锁定 `4.166.0`（`devDependencies`），脚本统一用 `npx wrangler`。
+- `package-lock.json` 的 `resolved` 统一为 `registry.npmjs.org`（原本指向国内镜像，
+  GitHub Runner 上 `npm ci` 可能变慢或失败）；锁定的版本与 integrity 不变。
+- 移除 `deploy` / `predeploy` 脚本：本地发布改用 `npx wrangler pages deploy static --project-name <项目名>`，
+  Actions 侧不需要这两个脚本。
 - 版本号：`package.json`、`static/js/version.js`、页面占位统一为 `1.0.0`。
+
+### 文档
+
+- README 与 `docs-src/` 全量改写：新增「数据库与迁移」页，把部署拆成「控制台准备（Direct Upload）」
+  与「GitHub Actions 自动部署」，命令行路径降级为开发者兜底。
+- 删除全部 `CF_PAGES`、`postbuild`、`NODE_ENV=development`、`schema.sql 作为基线来源` 的表述。
+- 应用内 3 处「使用手册」入口改为打开官方在线手册（`https://bypc.us.ci/docs/`），
+  仓库不再依赖站内 `/docs/` 路径。
 
 ### 升级步骤（必须）
 
@@ -52,9 +67,11 @@
 ### 验证
 
 - `node --check` 覆盖全部 `tools/*.mjs`；`npm run build` 通过且不触发任何迁移。
+- `wrangler pages functions build` 编译通过，确认 `pages deploy static` 会打包根目录 `functions/`（不再需要 `static/functions`）。
 - 全仓断言：docs / README / workflow 中不再出现 `CF_PAGES`、`postbuild`、
   `PAGES_WRANGLER_MAJOR_VERSION`、`db:baseline`、`NODE_ENV=development`。
-- 敏感信息扫描：仓库内无真实 `database_id`、API Token、账号 ID。
+- 敏感信息扫描：仓库内无真实 `database_id`、API Token、账号 ID；`wrangler.example.toml` 只有占位符。
+- 公开仓库自检：无 `node_modules`、`.wrangler`、`wrangler.toml`、`docs-src`、`static/docs`。
 
 ## [0.14.4] - 2026-11-15
 

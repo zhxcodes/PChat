@@ -64,5 +64,5 @@ YYYYMMDDHHMMSS_描述.sql
 |---|---|---|
 | `duplicate column name: xxx` | 在已有新列的库上重复执行了非幂等迁移 | 不要再跑；查 `d1_migrations` 确认记录 |
 | `no such table: d1_migrations` | 从没跑过 `migrations apply` | 跑一次迁移即可，Wrangler 会自动建表 |
-| Actions 日志里没有迁移步骤 | 未配置 Secret `D1_DATABASE_ID`（首次部署会跳过） | 按 docs-src/database.md 补齐 Secret 后重跑 |
+| Actions 日志里没有迁移步骤 | 未配置 Secret `D1_DATABASE_ID`（首次部署会跳过） | 按 https://bypc.us.ci/docs/database 补齐 Secret 后重跑 |
 | 迁移成功但登录 500 | 库连错了 / Pages 的 `DB` 绑定指向另一个库 | 对比 `d1_migrations` 与实际绑定库的 ID |
